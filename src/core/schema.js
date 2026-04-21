@@ -13,7 +13,8 @@ export const defaultSiteData = {
     backgroundGradient: ''
   },
   content: {
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
+    avatarShape: 'circle',
     title: 'Jane Doe',
     subtitle: 'Product Designer & Developer',
     description: 'I build beautiful, scalable, and intuitive web applications.',

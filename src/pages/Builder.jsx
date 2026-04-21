@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react';
+import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin } from 'lucide-react';
 import { defaultSiteData, generateId } from '../core/schema';
+import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -76,6 +77,15 @@ export const Builder = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => handleContentChange('avatar', ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   // Sections management
   const handleDragEnd = (result) => {
     if (!result.destination) return;
@@ -118,6 +128,7 @@ export const Builder = () => {
     if (type === 'links' || type === 'social') newSection.data.items = [{ id: generateId(), title: 'New Item', url: 'https://', platform: 'twitter' }];
     if (type === 'contact') newSection.data = { email: '', phone: '' };
     if (type === 'text') newSection.data = { text: 'New text block' };
+    if (type === 'map') newSection.data = { title: '', mapProvider: 'google', embedUrl: '' };
     
     handleContentChange('sections', [...siteData.content.sections, newSection]);
   };
@@ -316,7 +327,61 @@ export const Builder = () => {
             <div className="editor-section">
               <span className="label">Profile Information</span>
               <div className="flex-col gap-3 mt-4">
-                <input type="text" placeholder="Avatar URL" className="input-field" value={siteData.content.avatar} onChange={(e) => handleContentChange('avatar', e.target.value)} />
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Avatar</span>
+                  <div className="flex items-center gap-3" style={{ flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        width: '72px',
+                        height: '72px',
+                        borderRadius: (siteData.content.avatarShape || 'circle') === 'square' ? '12px' : '50%',
+                        overflow: 'hidden',
+                        background: 'var(--bg-tertiary)',
+                        border: '2px dashed var(--border-color)',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {siteData.content.avatar ? (
+                        <img src={siteData.content.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', padding: '4px' }}>Rasm yo‘q</span>
+                      )}
+                    </div>
+                    <div className="flex-col gap-2" style={{ flex: 1, minWidth: '140px' }}>
+                      <label htmlFor="avatar-upload" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '0.5rem 0.75rem', cursor: 'pointer', textAlign: 'center' }}>
+                        Rasm yuklash
+                      </label>
+                      <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
+                      {siteData.content.avatar && (
+                        <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.35rem 0.5rem' }} onClick={() => handleContentChange('avatar', '')}>
+                          Olib tashlash
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginTop: '0.75rem', marginBottom: '0.35rem' }}>Shakl</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={`btn ${(siteData.content.avatarShape || 'circle') !== 'square' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, fontSize: '0.8rem', padding: '0.45rem' }}
+                      onClick={() => handleContentChange('avatarShape', 'circle')}
+                    >
+                      Aylana
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${(siteData.content.avatarShape || 'circle') === 'square' ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, fontSize: '0.8rem', padding: '0.45rem' }}
+                      onClick={() => handleContentChange('avatarShape', 'square')}
+                    >
+                      To‘rtburchak
+                    </button>
+                  </div>
+                </div>
                 <input type="text" placeholder="Title / Name" className="input-field" value={siteData.content.title} onChange={(e) => handleContentChange('title', e.target.value)} />
                 <input type="text" placeholder="Subtitle" className="input-field" value={siteData.content.subtitle} onChange={(e) => handleContentChange('subtitle', e.target.value)} />
                 <textarea placeholder="Description" className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} value={siteData.content.description} onChange={(e) => handleContentChange('description', e.target.value)} />
@@ -348,7 +413,9 @@ export const Builder = () => {
                                   <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex', color: 'var(--text-muted)' }}>
                                     <GripVertical size={16} />
                                   </div>
-                                  <span style={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '0.875rem' }}>{section.type} Block</span>
+                                  <span style={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '0.875rem' }}>
+                                    {section.type === 'map' ? 'Location' : section.type} Block
+                                  </span>
                                 </div>
                                 <div className="flex gap-1">
                                   <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} onClick={() => moveSection(idx, 'up')}><ArrowUp size={16} /></button>
@@ -434,6 +501,42 @@ export const Builder = () => {
                         <input type="text" className="input-field" value={section.data.phone} onChange={(e) => updateSectionData(section.id, { ...section.data, phone: e.target.value })} placeholder="Phone number" />
                       </div>
                     )}
+
+                    {section.type === 'map' && (
+                      <div className="flex-col gap-2">
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Xarita manbai</span>
+                        <select
+                          className="input-field"
+                          value={section.data.mapProvider || 'google'}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, mapProvider: e.target.value })}
+                        >
+                          <option value="google">Google Maps</option>
+                          <option value="yandex">Yandex Xaritalar</option>
+                        </select>
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Sarlavha (masalan: Bizning ofis)"
+                        />
+                        <textarea
+                          className="input-field"
+                          style={{ minHeight: '96px', resize: 'vertical', fontSize: '0.8rem' }}
+                          value={section.data.embedUrl || ''}
+                          onChange={(e) => {
+                            const src = extractMapEmbedSrc(e.target.value);
+                            updateSectionData(section.id, { ...section.data, embedUrl: src });
+                          }}
+                          placeholder="Google: Xarita → Ulashish → Xaritani joylashtirish → src havolasi. Yandex: Xarita → Ulashish → HTML. Iframe yoki faqat https://... havolani qo‘ying."
+                        />
+                        {section.data.embedUrl && !isAllowedMapEmbedUrl(section.data.embedUrl) && (
+                          <span style={{ fontSize: '0.7rem', color: '#ef4444', lineHeight: 1.4 }}>
+                            Havola Google Maps embed (maps/embed) yoki Yandex map-widget bo‘lishi kerak.
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                           )}
                         </Draggable>
@@ -449,6 +552,7 @@ export const Builder = () => {
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('social')}><Plus size={14}/> Social</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('text')}><Plus size={14}/> Text</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('contact')}><Plus size={14}/> Contact</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('map')}><MapPin size={14}/> Location</button>
                 </div>
               </div>
             </div>

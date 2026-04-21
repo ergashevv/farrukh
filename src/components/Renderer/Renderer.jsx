@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link as LinkIcon, Mail, Phone, ExternalLink } from 'lucide-react';
+import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { isAllowedMapEmbedUrl } from '../../core/mapEmbed';
 
 const TwitterIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -159,6 +160,67 @@ export const Renderer = ({ data, onReorder }) => {
               {section.data.text}
            </div>
         );
+      case 'map': {
+        const raw = section.data.embedUrl?.trim() || '';
+        const safeSrc = isAllowedMapEmbedUrl(raw) ? raw : null;
+        if (!safeSrc) return null;
+        const provider = section.data.mapProvider || 'google';
+        const accent = provider === 'yandex' ? '#fc3f1e' : globalStyle.primaryColor;
+        return (
+          <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  marginBottom: '0.75rem',
+                  fontSize: '0.9375rem',
+                  fontWeight: 600,
+                  color: globalStyle.textColor,
+                  opacity: 0.95
+                }}
+              >
+                <MapPin size={18} style={{ color: accent, flexShrink: 0 }} aria-hidden />
+                <span>{section.data.title}</span>
+              </div>
+            )}
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                borderRadius: globalStyle.borderRadius,
+                overflow: 'hidden',
+                boxShadow: globalStyle.buttonStyle === 'glass'
+                  ? '0 8px 32px rgba(0,0,0,0.12)'
+                  : '0 4px 24px rgba(0,0,0,0.08)',
+                border: `1px solid ${globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.08)'}`,
+                background: globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)',
+                aspectRatio: '16 / 10',
+                minHeight: '200px',
+                maxHeight: 'min(56vh, 420px)'
+              }}
+            >
+              <iframe
+                title={section.data.title || 'Xarita'}
+                src={safeSrc}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 0,
+                  display: 'block'
+                }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        );
+      }
       default: return null;
     }
   };
@@ -168,8 +230,13 @@ export const Renderer = ({ data, onReorder }) => {
       <div style={maxW}>
         {content.avatar && (
           <img 
-            src={content.avatar} alt={content.title}
-            style={{ width: '96px', height: '96px', borderRadius: '50%', objectFit: 'cover', marginBottom: '1.5rem',
+            src={content.avatar} alt={content.title || 'Avatar'}
+            style={{
+              width: '96px',
+              height: '96px',
+              borderRadius: ((content.avatarShape || 'circle') === 'square' ? '16px' : '50%'),
+              objectFit: 'cover',
+              marginBottom: '1.5rem',
               border: `3px solid ${globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.5)' : 'transparent'}`,
               boxShadow: globalStyle.buttonStyle === 'glass' ? '0 4px 15px rgba(0,0,0,0.1)' : 'none'
             }}
