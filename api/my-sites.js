@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     await initDb();
 
     const rows = await sql`
-      SELECT slug, data, updated_at
+      SELECT slug, data, updated_at, view_count
       FROM sites
       WHERE user_id = ${userId}
       ORDER BY updated_at DESC
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
         slug: r.slug,
         title,
         updatedAt: r.updated_at,
+        viewCount: Number(r.view_count ?? 0),
         preview: {
           backgroundColor: gs.backgroundColor || '#ffffff',
           backgroundGradient: gs.backgroundGradient || null,

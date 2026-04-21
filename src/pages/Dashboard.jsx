@@ -128,6 +128,9 @@ export const Dashboard = () => {
                     <div style={{ fontWeight: 600, fontSize: '1rem' }}>{s.title}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                       /{s.slug}
+                      {typeof s.viewCount === 'number' ? (
+                        <span style={{ marginLeft: '0.5rem' }}>· Ko‘rishlar: {s.viewCount}</span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

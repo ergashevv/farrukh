@@ -384,3 +384,24 @@ input[type="color"]::-webkit-color-swatch {
   border: none;
   border-radius: 50%;
 }
+
+/* Jonli mini-sayt: silliq scroll va AOS uchun yumshoq chiqish */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.site-renderer-container) {
+    scroll-behavior: smooth;
+  }
+}
+
+.site-renderer-container [data-aos] {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-renderer-container [data-aos]:not(.aos-animate) {
+    will-change: transform, opacity;
+  }
+  .site-renderer-container [data-aos].aos-animate {
+    will-change: auto;
+  }
+}

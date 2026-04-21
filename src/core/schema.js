@@ -6,12 +6,24 @@ export const defaultQrStyle = {
   level: 'H',
   size: 256,
   includeMargin: true,
+  logoUrl: '',
+  logoSize: 22,
 };
 
 export const defaultSiteData = {
   id: generateId(),
   theme: 'minimal',
   qrStyle: { ...defaultQrStyle },
+  seo: {
+    pageTitle: '',
+    description: '',
+    ogImage: '',
+  },
+  privacy: {
+    enabled: false,
+    password: '',
+    expiresAt: '',
+  },
   globalStyle: {
     fontFamily: 'Inter',
     backgroundColor: '#ffffff',
@@ -19,7 +31,8 @@ export const defaultSiteData = {
     primaryColor: '#000000',
     borderRadius: '8px',
     buttonStyle: 'filled',
-    backgroundGradient: ''
+    backgroundGradient: '',
+    scrollAnimation: 'none',
   },
   content: {
     avatar: '',

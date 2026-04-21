@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { sql, initDb } from './db.js';
 import { getBearerUserId } from './auth-helpers.js';
 
@@ -33,11 +34,41 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Ma’lumot yo‘q' });
     }
 
+    const stored = JSON.parse(JSON.stringify(data));
+    const passwordPlain = typeof stored.privacy?.password === 'string' ? stored.privacy.password : '';
+    if (!stored.privacy) stored.privacy = {};
+    delete stored.privacy.password;
+    stored.privacy = {
+      enabled: !!data.privacy?.enabled,
+      expiresAt: data.privacy?.expiresAt || null,
+    };
+
+    let hashAction = 'none';
+    let hashVal = null;
+
+    if (!stored.privacy.enabled) {
+      hashAction = 'clear';
+    } else if (passwordPlain.length > 0) {
+      hashAction = 'set';
+      hashVal = bcrypt.hashSync(passwordPlain, 10);
+    }
+
     await initDb();
 
     const existing = await sql`
       SELECT slug, user_id FROM sites WHERE slug = ${slug} LIMIT 1
     `;
+
+    if (stored.privacy.enabled && hashAction !== 'set') {
+      const hrows =
+        existing.length > 0
+          ? await sql`SELECT access_password_hash FROM sites WHERE slug = ${slug} LIMIT 1`
+          : [];
+      if (!hrows[0]?.access_password_hash) {
+        return res.status(400).json({ error: 'Maxfiy sahifa uchun parol kiriting' });
+      }
+      hashAction = 'none';
+    }
 
     if (existing.length > 0) {
       if (existing[0].user_id !== userId) {
@@ -45,9 +76,14 @@ export default async function handler(req, res) {
       }
       await sql`
         UPDATE sites
-        SET data = ${data}, updated_at = CURRENT_TIMESTAMP
+        SET data = ${stored}, updated_at = CURRENT_TIMESTAMP
         WHERE slug = ${slug}
       `;
+      if (hashAction === 'clear') {
+        await sql`UPDATE sites SET access_password_hash = NULL WHERE slug = ${slug}`;
+      } else if (hashAction === 'set') {
+        await sql`UPDATE sites SET access_password_hash = ${hashVal} WHERE slug = ${slug}`;
+      }
       return res.status(200).json({ ok: true, slug, updated: true });
     }
 
@@ -62,9 +98,18 @@ export default async function handler(req, res) {
       });
     }
 
+    const initialHash = hashAction === 'set' ? hashVal : null;
     await sql`
-      INSERT INTO sites (slug, data, user_id, updated_at)
-      VALUES (${slug}, ${data}, ${userId}, CURRENT_TIMESTAMP)
+      INSERT INTO sites (slug, data, user_id, updated_at, view_count, click_stats, access_password_hash)
+      VALUES (
+        ${slug},
+        ${stored},
+        ${userId},
+        CURRENT_TIMESTAMP,
+        0,
+        ${JSON.stringify({})}::jsonb,
+        ${initialHash}
+      )
     `;
 
     return res.status(201).json({ ok: true, slug, created: true });

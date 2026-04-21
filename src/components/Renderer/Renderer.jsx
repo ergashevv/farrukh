@@ -1,8 +1,10 @@
-import React from 'react';
-import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin } from 'lucide-react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { ensureSiteAosInitialized, syncSiteAos } from '../../core/aosBootstrap';
+import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin, Calendar, MessageCircle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { isAllowedMapEmbedUrl } from '../../core/mapEmbed';
 import { getTextSectionRenderStyle, getProfileFieldStyle } from '../../core/textSectionStyle';
+import { extractYoutubeVideoId } from '../../core/youtubeEmbed';
 
 const TwitterIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -32,20 +34,83 @@ const TelegramIcon = (props) => (
   </svg>
 );
 
+const LinkedinIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect x="2" y="9" width="4" height="12" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
+
+const YoutubeIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
+    <path d="m10 15 5-3-5-3z" />
+  </svg>
+);
+
 const getIcon = (platform, props) => {
   switch (platform?.toLowerCase()) {
     case 'twitter': return <TwitterIcon {...props} />;
     case 'instagram': return <InstagramIcon {...props} />;
     case 'github': return <GithubIcon {...props} />;
     case 'telegram': return <TelegramIcon {...props} />;
+    case 'linkedin': return <LinkedinIcon {...props} />;
+    case 'youtube': return <YoutubeIcon {...props} />;
+    case 'whatsapp': return <MessageCircle {...props} />;
     case 'mail': return <Mail {...props} />;
     case 'phone': return <Phone {...props} />;
     default: return <LinkIcon {...props} />;
   }
 };
 
-export const Renderer = ({ data, onReorder }) => {
+export const Renderer = ({ data, onReorder, siteSlug }) => {
   const { globalStyle, content } = data;
+  const aosAnim = globalStyle.scrollAnimation || 'none';
+  const aosRequested = aosAnim !== 'none';
+
+  const [reduceMotion, setReduceMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = () => setReduceMotion(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const aosActive = aosRequested && !reduceMotion;
+
+  const aosAttrs = (delay = 0) =>
+    aosActive
+      ? {
+          'data-aos': aosAnim,
+          'data-aos-once': 'true',
+          'data-aos-duration': '720',
+          'data-aos-easing': 'ease-out-sine',
+          'data-aos-anchor-placement': 'center-bottom',
+          ...(delay > 0 ? { 'data-aos-delay': String(Math.min(delay, 420)) } : {}),
+        }
+      : {};
+
+  const sectionIdsKey = content?.sections?.map((s) => s.id).join('|') ?? '';
+
+  useLayoutEffect(() => {
+    if (!aosActive) return undefined;
+    ensureSiteAosInitialized();
+    syncSiteAos();
+    return undefined;
+  }, [aosActive, aosAnim, sectionIdsKey]);
+
+  const fireTrack = (targetKey) => {
+    if (!siteSlug || !targetKey) return;
+    fetch('/api/site-track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: siteSlug, event: 'click', targetKey }),
+    }).catch(() => {});
+  };
 
   const isPattern = globalStyle.backgroundImage?.includes('data:image/svg');
   // fixed attachment breaks tiled/cover backgrounds on mobile Safari (pattern stops mid-scroll)
@@ -73,7 +138,8 @@ export const Renderer = ({ data, onReorder }) => {
     alignItems: 'center',
     padding: '3rem 1.5rem',
     boxSizing: 'border-box',
-    overflowY: 'auto'
+    /* AOS window scroll bilan ishlaydi — vertikal scroll konteyner emas, balki hujjat */
+    overflowX: 'hidden',
   };
 
   const maxW = { maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' };
@@ -113,6 +179,7 @@ export const Renderer = ({ data, onReorder }) => {
                 style={{ color: globalStyle.textColor, transition: 'opacity 0.2s', opacity: 0.8 }}
                 onMouseOver={(e) => e.currentTarget.style.opacity = '1'}
                 onMouseOut={(e) => e.currentTarget.style.opacity = '0.8'}
+                onClick={() => fireTrack(`social:${section.id}:${s.id}`)}
               >
                 {getIcon(s.platform, { size: 28 })}
               </a>
@@ -125,6 +192,7 @@ export const Renderer = ({ data, onReorder }) => {
             {section.data.items?.map(link => (
               <a 
                 key={link.id} href={link.url} target="_blank" rel="noreferrer" style={getBtnStyle()}
+                onClick={() => fireTrack(`link:${section.id}:${link.id}`)}
                 onMouseOver={(e) => {
                   if(globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = globalStyle.primaryColor; e.currentTarget.style.color = '#fff'; }
                   else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '0.9'; }
@@ -145,12 +213,12 @@ export const Renderer = ({ data, onReorder }) => {
         return (
           <div key={section.id} style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
              {section.data.email && (
-               <a href={`mailto:${section.data.email}`} style={{...getBtnStyle(), flex: 1, margin: 0 }}>
+               <a href={`mailto:${section.data.email}`} style={{...getBtnStyle(), flex: 1, margin: 0 }} onClick={() => fireTrack(`contact:${section.id}:email`)}>
                  <Mail size={18} style={{ marginRight: '0.5rem' }} /> Email
                </a>
              )}
              {section.data.phone && (
-               <a href={`tel:${section.data.phone}`} style={{...getBtnStyle(), flex: 1, margin: 0 }}>
+               <a href={`tel:${section.data.phone}`} style={{...getBtnStyle(), flex: 1, margin: 0 }} onClick={() => fireTrack(`contact:${section.id}:phone`)}>
                  <Phone size={18} style={{ marginRight: '0.5rem' }} /> Call
                </a>
              )}
@@ -230,6 +298,199 @@ export const Renderer = ({ data, onReorder }) => {
           </div>
         );
       }
+      case 'faq':
+        return (
+          <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+              {section.data.items?.map((item) => (
+                <details
+                  key={item.id}
+                  style={{
+                    borderRadius: globalStyle.borderRadius,
+                    border: `1px solid ${globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.08)'}`,
+                    background: globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.03)',
+                    padding: '0.5rem 0.75rem',
+                  }}
+                >
+                  <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{item.question}</summary>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.9375rem', opacity: 0.95, lineHeight: 1.5 }}>{item.answer}</div>
+                </details>
+              ))}
+            </div>
+          </div>
+        );
+      case 'gallery':
+        return (
+          <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem', width: '100%' }}>
+              {section.data.items?.map((item) => (
+                <figure key={item.id} style={{ margin: 0 }}>
+                  <img
+                    src={item.url}
+                    alt={item.caption || ''}
+                    loading="lazy"
+                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: globalStyle.borderRadius, display: 'block' }}
+                  />
+                  {item.caption && (
+                    <figcaption style={{ fontSize: '0.75rem', marginTop: '0.25rem', textAlign: 'center', opacity: 0.85 }}>{item.caption}</figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          </div>
+        );
+      case 'video': {
+        const vid = extractYoutubeVideoId(section.data.youtubeUrl || '');
+        if (!vid) return null;
+        return (
+          <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+            )}
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                borderRadius: globalStyle.borderRadius,
+                overflow: 'hidden',
+                aspectRatio: '16 / 9',
+                background: '#0f0f0f',
+              }}
+            >
+              <iframe
+                title={section.data.title || 'Video'}
+                src={`https://www.youtube-nocookie.com/embed/${vid}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+              />
+            </div>
+          </div>
+        );
+      }
+      case 'hours':
+        return (
+          <div
+            key={section.id}
+            style={{
+              width: '100%',
+              marginBottom: '1.5rem',
+              padding: '1rem 1.25rem',
+              borderRadius: globalStyle.borderRadius,
+              border: `1px solid ${globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.08)'}`,
+              background: globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)',
+              boxSizing: 'border-box',
+            }}
+          >
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center' }}>{section.data.title}</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              {section.data.lines?.map((line) => (
+                <div key={line.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', fontSize: '0.9375rem' }}>
+                  <span style={{ opacity: 0.9 }}>{line.label}</span>
+                  <span style={{ fontWeight: 500, textAlign: 'right' }}>{line.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'downloads':
+        return (
+          <div key={section.id} style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+            )}
+            {section.data.items?.map((item) => (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                style={getBtnStyle()}
+                onClick={() => fireTrack(`download:${section.id}:${item.id}`)}
+                onMouseOver={(e) => {
+                  if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = globalStyle.primaryColor; e.currentTarget.style.color = '#fff'; }
+                  else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '0.9'; }
+                  else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'; }
+                }}
+                onMouseOut={(e) => {
+                  if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = globalStyle.textColor; }
+                  else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '1'; }
+                  else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }
+                }}
+              >
+                <ExternalLink size={18} style={{ marginRight: '0.5rem' }} />
+                {item.title}
+                {item.fileType ? ` · ${item.fileType}` : ''}
+              </a>
+            ))}
+          </div>
+        );
+      case 'quick_actions': {
+        const hrefFor = (type, value) => {
+          const v = (value || '').trim();
+          if (!v) return '#';
+          if (type === 'whatsapp') {
+            const digits = v.replace(/\D/g, '');
+            return digits ? `https://wa.me/${digits}` : '#';
+          }
+          if (type === 'telegram') {
+            const u = v.replace(/^@/, '');
+            return u ? `https://t.me/${u}` : '#';
+          }
+          if (type === 'calendar') {
+            return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+          }
+          return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+        };
+        const iconFor = (type) => {
+          if (type === 'whatsapp') return <MessageCircle size={20} style={{ marginRight: '0.5rem' }} />;
+          if (type === 'telegram') return <TelegramIcon size={20} style={{ marginRight: '0.5rem' }} />;
+          if (type === 'calendar') return <Calendar size={20} style={{ marginRight: '0.5rem' }} />;
+          return <ExternalLink size={20} style={{ marginRight: '0.5rem' }} />;
+        };
+        return (
+          <div key={section.id} style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
+            {section.data.title && (
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+            )}
+            {section.data.items?.map((item) => {
+              const href = hrefFor(item.type, item.value);
+              const lab = item.label || (item.type === 'whatsapp' ? 'WhatsApp' : item.type === 'telegram' ? 'Telegram' : item.type === 'calendar' ? 'Bron qilish' : 'Havola');
+              return (
+                <a
+                  key={item.id}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={getBtnStyle()}
+                  onClick={() => fireTrack(`quick:${section.id}:${item.id}`)}
+                  onMouseOver={(e) => {
+                    if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = globalStyle.primaryColor; e.currentTarget.style.color = '#fff'; }
+                    else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '0.9'; }
+                    else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'; }
+                  }}
+                  onMouseOut={(e) => {
+                    if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = globalStyle.textColor; }
+                    else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '1'; }
+                    else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }
+                  }}
+                >
+                  {iconFor(item.type)}
+                  {lab}
+                </a>
+              );
+            })}
+          </div>
+        );
+      }
       default: return null;
     }
   };
@@ -242,6 +503,7 @@ export const Renderer = ({ data, onReorder }) => {
             src={content.avatar} alt={content.title || 'Avatar'}
             loading="eager"
             decoding="async"
+            {...aosAttrs(0)}
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}
@@ -261,6 +523,7 @@ export const Renderer = ({ data, onReorder }) => {
         
         {content.title && (
           <h1
+            {...aosAttrs(42)}
             style={{
               ...getProfileFieldStyle(content.titleStyle, 'title', globalStyle),
               marginBottom: '0.25rem',
@@ -272,6 +535,7 @@ export const Renderer = ({ data, onReorder }) => {
         )}
         {content.subtitle && (
           <h2
+            {...aosAttrs(84)}
             style={{
               ...getProfileFieldStyle(content.subtitleStyle, 'subtitle', globalStyle),
               marginBottom: '1rem',
@@ -283,6 +547,7 @@ export const Renderer = ({ data, onReorder }) => {
         )}
         {content.description && (
           <p
+            {...aosAttrs(126)}
             style={{
               ...getProfileFieldStyle(content.descriptionStyle, 'description', globalStyle),
               marginBottom: '2rem',
@@ -305,6 +570,7 @@ export const Renderer = ({ data, onReorder }) => {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
+                          {...aosAttrs(168 + idx * 56)}
                           style={{ 
                             width: '100%', 
                             ...provided.draggableProps.style,
@@ -324,7 +590,11 @@ export const Renderer = ({ data, onReorder }) => {
           </DragDropContext>
         ) : (
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {content.sections?.map(renderSection)}
+            {content.sections?.map((section, idx) => (
+              <div key={section.id} style={{ width: '100%' }} {...aosAttrs(168 + idx * 56)}>
+                {renderSection(section)}
+              </div>
+            ))}
           </div>
         )}
         

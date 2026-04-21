@@ -72,6 +72,9 @@ export const applyTemplate = (siteData, templateId) => {
   return {
     ...siteData,
     theme: templateId,
-    globalStyle: { ...template.style }
+    globalStyle: {
+      ...template.style,
+      scrollAnimation: siteData.globalStyle?.scrollAnimation ?? 'none',
+    },
   };
 };

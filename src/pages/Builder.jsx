@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { QRCodeCanvas } from 'qrcode.react';
-import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
+import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { defaultSiteData, defaultQrStyle, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
@@ -10,6 +10,7 @@ import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getStoredAuth, clearAuth } from '../auth';
 import { ProfileTextStyleControls } from '../components/ProfileTextStyleControls';
+import { SCROLL_ANIMATION_OPTIONS } from '../core/scrollAnimation';
 
 const patterns = [
   { id: 'none', name: 'None', url: '' },
@@ -37,24 +38,46 @@ export const Builder = () => {
   const [previewMode, setPreviewMode] = useState('mobile');
   const [publishModal, setPublishModal] = useState({ open: false, slug: '', copied: false });
   const iframeRef = useRef(null);
+  const qrSvgExportRef = useRef(null);
   const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     if (!editSlug) {
-      setLoadError('');
+      startTransition(() => setLoadError(''));
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/get-site?slug=${encodeURIComponent(editSlug)}`);
+        const auth = getStoredAuth();
+        const headers = auth?.token ? { Authorization: `Bearer ${auth.token}` } : {};
+        const url = auth?.token
+          ? `/api/get-site-editor?slug=${encodeURIComponent(editSlug)}`
+          : `/api/get-site?slug=${encodeURIComponent(editSlug)}`;
+        const res = await fetch(url, { headers });
+        if (res.status === 401) {
+          if (!cancelled) setLoadError('Tahrirlash uchun hisobga kiring');
+          return;
+        }
         if (!res.ok) {
           if (!cancelled) setLoadError('Sayt topilmadi');
           return;
         }
         const data = await res.json();
+        if (data?.locked) {
+          if (!cancelled) setLoadError('Tahrirlash uchun hisobga kiring');
+          return;
+        }
         if (!cancelled) {
-          setSiteData(data);
+          setSiteData({
+            ...defaultSiteData,
+            ...data,
+            qrStyle: { ...defaultQrStyle, ...(data.qrStyle || {}) },
+            seo: { ...defaultSiteData.seo, ...(data.seo || {}) },
+            privacy: { ...defaultSiteData.privacy, ...(data.privacy || {}), password: '' },
+            content: data.content || defaultSiteData.content,
+            globalStyle: data.globalStyle || defaultSiteData.globalStyle,
+          });
           setLoadError('');
         }
       } catch {
@@ -116,6 +139,14 @@ export const Builder = () => {
     setSiteData({ ...siteData, content: { ...siteData.content, [key]: value } });
   };
 
+  const handleSeoChange = (key, value) => {
+    setSiteData({ ...siteData, seo: { ...(siteData.seo || {}), [key]: value } });
+  };
+
+  const handlePrivacyChange = (key, value) => {
+    setSiteData({ ...siteData, privacy: { ...(siteData.privacy || {}), [key]: value } });
+  };
+
   const handleBgUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -134,6 +165,55 @@ export const Builder = () => {
     if (!dataUrl) return;
     const blobUrl = await uploadImageToBlob(dataUrl, 'avatar');
     handleContentChange('avatar', blobUrl || dataUrl);
+  };
+
+  const handleQrLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = '';
+    const dataUrl = await fileToAvatarDataUrl(file, 256);
+    if (!dataUrl) return;
+    const blobUrl = await uploadImageToBlob(dataUrl, 'qr-logo');
+    handleQrStyleChange('logoUrl', blobUrl || dataUrl);
+  };
+
+  const exportSiteJson = () => {
+    const blob = new Blob([JSON.stringify(siteData, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `site-${(siteData.id || 'backup').slice(0, 8)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const importSiteJson = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const j = JSON.parse(String(reader.result));
+        if (!j.content || typeof j.content !== 'object' || !j.globalStyle) {
+          alert('Noto‘g‘ri JSON: content va globalStyle kerak');
+          return;
+        }
+        if (!window.confirm('Joriy loyiha import bilan almashtirilsinmi?')) return;
+        setSiteData({
+          ...defaultSiteData,
+          ...j,
+          id: j.id || generateId(),
+          content: j.content,
+          globalStyle: j.globalStyle,
+          qrStyle: { ...defaultQrStyle, ...(j.qrStyle || {}) },
+          seo: { ...defaultSiteData.seo, ...(j.seo || {}) },
+          privacy: { ...defaultSiteData.privacy, ...(j.privacy || {}), password: '' },
+        });
+      } catch {
+        alert('JSON o‘qib bo‘lmadi');
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Sections management
@@ -187,7 +267,53 @@ export const Builder = () => {
       };
     }
     if (type === 'map') newSection.data = { title: '', mapProvider: 'google', embedUrl: '' };
-    
+    if (type === 'faq') {
+      newSection.data = {
+        title: 'Savol-javob',
+        items: [{ id: generateId(), question: 'Savol?', answer: 'Javob.' }],
+      };
+    }
+    if (type === 'gallery') {
+      newSection.data = {
+        title: '',
+        items: [{ id: generateId(), url: 'https://picsum.photos/seed/qr/400/300', caption: '' }],
+      };
+    }
+    if (type === 'video') {
+      newSection.data = { title: 'Video', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+    }
+    if (type === 'hours') {
+      newSection.data = {
+        title: 'Ish vaqti',
+        lines: [
+          { id: generateId(), label: 'Dush–Juma', value: '9:00 – 18:00' },
+          { id: generateId(), label: 'Shanba', value: '10:00 – 14:00' },
+        ],
+      };
+    }
+    if (type === 'downloads') {
+      newSection.data = {
+        title: 'Fayllar',
+        items: [
+          {
+            id: generateId(),
+            title: 'Namuna PDF',
+            url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            fileType: 'PDF',
+          },
+        ],
+      };
+    }
+    if (type === 'quick_actions') {
+      newSection.data = {
+        title: 'Tezkor aloqa',
+        items: [
+          { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '998901234567' },
+          { id: generateId(), type: 'telegram', label: 'Telegram', value: 'username' },
+        ],
+      };
+    }
+
     handleContentChange('sections', [...siteData.content.sections, newSection]);
   };
 
@@ -237,7 +363,17 @@ export const Builder = () => {
       }
 
       const liveUrl = `${window.location.origin}/${slugNorm}`;
-      localStorage.setItem(`published_${slugNorm}`, JSON.stringify(siteData));
+      try {
+        const cached = JSON.parse(JSON.stringify(siteData));
+        if (cached.privacy) cached.privacy.password = '';
+        localStorage.setItem(`published_${slugNorm}`, JSON.stringify(cached));
+      } catch {
+        localStorage.setItem(`published_${slugNorm}`, JSON.stringify(siteData));
+      }
+      setSiteData((prev) => ({
+        ...prev,
+        privacy: { ...(prev.privacy || {}), password: '' },
+      }));
       setPublishModal({ ...publishModal, slug: slugNorm, publishedUrl: liveUrl, isPublishing: false });
     } catch (error) {
       console.error('Publish error:', error);
@@ -256,6 +392,29 @@ export const Builder = () => {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+  };
+
+  const downloadQrSvg = () => {
+    const wrap = qrSvgExportRef.current;
+    const svg = wrap?.querySelector('svg');
+    if (!svg) return;
+    const xml = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `qr-${publishModal.slug}.svg`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  const publishQrImageSettings = () => {
+    const qs = siteData.qrStyle || defaultQrStyle;
+    const logo = (qs.logoUrl || '').trim();
+    const sz = qs.size || 256;
+    const pct = (qs.logoSize ?? 22) / 100;
+    if (!logo) return undefined;
+    const wh = Math.round(sz * pct);
+    return { src: logo, height: wh, width: wh, excavate: true };
   };
 
   return (
@@ -307,6 +466,12 @@ export const Builder = () => {
             onClick={() => setActiveTab('content')}
           >
             Content
+          </button>
+          <button 
+            style={{ flex: 1, padding: '1rem', borderBottom: activeTab === 'settings' ? '2px solid var(--primary-color)' : '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer', fontWeight: 600, color: activeTab === 'settings' ? 'var(--primary-color)' : 'var(--text-secondary)' }}
+            onClick={() => setActiveTab('settings')}
+          >
+            Sozlamalar
           </button>
         </div>
 
@@ -419,6 +584,21 @@ export const Builder = () => {
                     <option value="9999px">Pill</option>
                   </select>
                 </div>
+                <div>
+                  <span style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>Scroll animatsiya (AOS)</span>
+                  <select
+                    className="input-field"
+                    value={siteData.globalStyle.scrollAnimation || 'none'}
+                    onChange={(e) => handleGlobalStyleChange('scrollAnimation', e.target.value)}
+                  >
+                    {SCROLL_ANIMATION_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.35rem 0 0' }}>
+                    Bloklar scroll qilganda tanlangan effekt bilan paydo bo‘ladi.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -481,6 +661,31 @@ export const Builder = () => {
                   />
                   Chekka bo‘shliq (margin)
                 </label>
+                <div>
+                  <span style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>QR markazidagi logo (ixtiyoriy)</span>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <label className="btn btn-secondary" style={{ fontSize: '0.75rem', cursor: 'pointer' }}>
+                      Logo yuklash
+                      <input type="file" accept="image/*" onChange={handleQrLogoUpload} style={{ display: 'none' }} />
+                    </label>
+                    {(siteData.qrStyle || defaultQrStyle).logoUrl ? (
+                      <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handleQrStyleChange('logoUrl', '')}>
+                        Logoni olib tashlash
+                      </button>
+                    ) : null}
+                  </div>
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Logo o‘lchami: {(siteData.qrStyle || defaultQrStyle).logoSize ?? 22}%</span>
+                    <input
+                      type="range"
+                      min={12}
+                      max={35}
+                      value={(siteData.qrStyle || defaultQrStyle).logoSize ?? 22}
+                      onChange={(e) => handleQrStyleChange('logoSize', Number(e.target.value))}
+                      style={{ width: '100%', marginTop: '0.35rem' }}
+                    />
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="btn btn-secondary w-full"
@@ -631,7 +836,18 @@ export const Builder = () => {
                                     <GripVertical size={16} />
                                   </div>
                                   <span style={{ fontWeight: 600, textTransform: 'capitalize', fontSize: '0.875rem' }}>
-                                    {section.type === 'map' ? 'Location' : section.type} Block
+                                    {(
+                                      {
+                                        map: 'Location',
+                                        faq: 'FAQ',
+                                        gallery: 'Gallery',
+                                        video: 'Video',
+                                        hours: 'Ish vaqti',
+                                        downloads: 'Yuklash',
+                                        quick_actions: 'Tezkor aloqa',
+                                      }[section.type] || section.type
+                                    )}{' '}
+                                    Block
                                   </span>
                                 </div>
                                 <div className="flex gap-1">
@@ -695,6 +911,7 @@ export const Builder = () => {
                                             <option value="linkedin">LinkedIn</option>
                                             <option value="youtube">YouTube</option>
                                             <option value="telegram">Telegram</option>
+                                            <option value="whatsapp">WhatsApp</option>
                                         </select>
                                         <input type="text" className="input-field" style={{ flex: 1, minWidth: 0 }} value={item.url} onChange={(e) => {
                                           const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
@@ -735,22 +952,21 @@ export const Builder = () => {
                           <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '0.5rem' }}>
                             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Joysizlash</span>
                             <div className="flex gap-1">
-                              {[
-                                { id: 'left', Icon: AlignLeft },
-                                { id: 'center', Icon: AlignCenter },
-                                { id: 'right', Icon: AlignRight },
-                              ].map(({ id, Icon }) => (
-                                <button
-                                  key={id}
-                                  type="button"
-                                  className={`btn ${(section.data.align || 'center') === id ? 'btn-primary' : 'btn-secondary'}`}
-                                  style={{ padding: '0.35rem 0.5rem' }}
-                                  onClick={() => updateSectionData(section.id, { ...section.data, align: id })}
-                                  aria-label={id}
-                                >
-                                  <Icon size={16} />
-                                </button>
-                              ))}
+                              {(['left', 'center', 'right']).map((id) => {
+                                const Ico = id === 'left' ? AlignLeft : id === 'center' ? AlignCenter : AlignRight;
+                                return (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    className={`btn ${(section.data.align || 'center') === id ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{ padding: '0.35rem 0.5rem' }}
+                                    onClick={() => updateSectionData(section.id, { ...section.data, align: id })}
+                                    aria-label={id}
+                                  >
+                                    <Ico size={16} />
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-2" style={{ gap: '0.5rem' }}>
@@ -813,6 +1029,272 @@ export const Builder = () => {
                       </div>
                     )}
 
+                    {section.type === 'faq' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Blok sarlavhasi"
+                        />
+                        {section.data.items?.map((item, i) => (
+                          <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.question}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], question: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Savol"
+                            />
+                            <textarea
+                              className="input-field"
+                              style={{ minHeight: '72px' }}
+                              value={item.answer}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], answer: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Javob"
+                            />
+                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
+                              O‘chirish
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), question: '', answer: '' }] })}>
+                          + Savol qo‘shish
+                        </button>
+                      </div>
+                    )}
+
+                    {section.type === 'gallery' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Galereya sarlavhasi (ixtiyoriy)"
+                        />
+                        {section.data.items?.map((item, i) => (
+                          <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.url}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], url: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Rasm URL (https://...)"
+                            />
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.caption || ''}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], caption: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Izoh"
+                            />
+                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
+                              O‘chirish
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), url: '', caption: '' }] })}>
+                          + Rasm
+                        </button>
+                      </div>
+                    )}
+
+                    {section.type === 'video' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Video sarlavhasi"
+                        />
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.youtubeUrl || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, youtubeUrl: e.target.value })}
+                          placeholder="YouTube havola (watch yoki youtu.be)"
+                        />
+                      </div>
+                    )}
+
+                    {section.type === 'hours' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Sarlavha"
+                        />
+                        {section.data.lines?.map((line, i) => (
+                          <div key={line.id} className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              className="input-field"
+                              style={{ flex: 1 }}
+                              value={line.label}
+                              onChange={(e) => {
+                                const lines = [...section.data.lines];
+                                lines[i] = { ...lines[i], label: e.target.value };
+                                updateSectionData(section.id, { ...section.data, lines });
+                              }}
+                              placeholder="Kun / yozuv"
+                            />
+                            <input
+                              type="text"
+                              className="input-field"
+                              style={{ flex: 1 }}
+                              value={line.value}
+                              onChange={(e) => {
+                                const lines = [...section.data.lines];
+                                lines[i] = { ...lines[i], value: e.target.value };
+                                updateSectionData(section.id, { ...section.data, lines });
+                              }}
+                              placeholder="Vaqt"
+                            />
+                            <button type="button" className="btn btn-secondary" style={{ padding: '0.35rem' }} onClick={() => updateSectionData(section.id, { ...section.data, lines: section.data.lines.filter((_, idx) => idx !== i) })}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, lines: [...(section.data.lines || []), { id: generateId(), label: '', value: '' }] })}>
+                          + Qator
+                        </button>
+                      </div>
+                    )}
+
+                    {section.type === 'downloads' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Blok sarlavhasi"
+                        />
+                        {section.data.items?.map((item, i) => (
+                          <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.title}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], title: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Fayl nomi"
+                            />
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.url}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], url: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="URL (PDF, vCard .vcf, ...)"
+                            />
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.fileType || ''}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], fileType: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Turi (PDF, vCard)"
+                            />
+                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
+                              O‘chirish
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), title: '', url: '', fileType: '' }] })}>
+                          + Fayl
+                        </button>
+                      </div>
+                    )}
+
+                    {section.type === 'quick_actions' && (
+                      <div className="flex-col gap-2">
+                        <input
+                          type="text"
+                          className="input-field"
+                          value={section.data.title || ''}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
+                          placeholder="Blok sarlavhasi"
+                        />
+                        {section.data.items?.map((item, i) => (
+                          <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                            <select
+                              className="input-field"
+                              value={item.type || 'custom'}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], type: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                            >
+                              <option value="whatsapp">WhatsApp</option>
+                              <option value="telegram">Telegram</option>
+                              <option value="calendar">Google Calendar / bron</option>
+                              <option value="custom">Havola</option>
+                            </select>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.label || ''}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], label: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder="Tugma yozuvi"
+                            />
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={item.value || ''}
+                              onChange={(e) => {
+                                const items = [...section.data.items];
+                                items[i] = { ...items[i], value: e.target.value };
+                                updateSectionData(section.id, { ...section.data, items });
+                              }}
+                              placeholder={item.type === 'whatsapp' ? 'Telefon (998...)' : item.type === 'telegram' ? '@username' : 'https://...'}
+                            />
+                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
+                              O‘chirish
+                            </button>
+                          </div>
+                        ))}
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '' }] })}>
+                          + Tugma
+                        </button>
+                      </div>
+                    )}
+
                     {section.type === 'map' && (
                       <div className="flex-col gap-2">
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Xarita manbai</span>
@@ -861,12 +1343,112 @@ export const Builder = () => {
               <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('links')}><Plus size={14}/> Links</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('social')}><Plus size={14}/> Social</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('quick_actions')}><Plus size={14}/> Tezkor</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('text')}><Plus size={14}/> Text</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('faq')}><Plus size={14}/> FAQ</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('gallery')}><Plus size={14}/> Gallery</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('video')}><Plus size={14}/> Video</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('hours')}><Plus size={14}/> Vaqt</button>
+                  <button className="btn btn-secondary flex-1" onClick={() => addSection('downloads')}><Plus size={14}/> Fayl</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('contact')}><Plus size={14}/> Contact</button>
                   <button className="btn btn-secondary flex-1" onClick={() => addSection('map')}><MapPin size={14}/> Location</button>
                 </div>
               </div>
             </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div>
+            <div className="editor-section">
+              <span className="label">SEO va ulashish</span>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 0.75rem' }}>
+                Jonli sahifa sarlavhasi, tavsif va ijtimoiy tarmoqlarda rasm (og:image).
+              </p>
+              <div className="flex-col gap-3 mt-2">
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Brauzer tab / og:title"
+                  value={(siteData.seo || {}).pageTitle || ''}
+                  onChange={(e) => handleSeoChange('pageTitle', e.target.value)}
+                />
+                <textarea
+                  className="input-field"
+                  style={{ minHeight: '72px' }}
+                  placeholder="Qisqa tavsif (meta description)"
+                  value={(siteData.seo || {}).description || ''}
+                  onChange={(e) => handleSeoChange('description', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="og:image URL (https://...)"
+                  value={(siteData.seo || {}).ogImage || ''}
+                  onChange={(e) => handleSeoChange('ogImage', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <span className="label">Maxfiylik va muddat</span>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 0.75rem' }}>
+                Parol bilan himoya serverda saqlanadi. Muddat tugagach sahifa 410 qaytaradi.
+              </p>
+              <div className="flex-col gap-3 mt-2">
+                <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '0.875rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!(siteData.privacy || {}).enabled}
+                    onChange={(e) => handlePrivacyChange('enabled', e.target.checked)}
+                  />
+                  Maxfiy sahifa (parol)
+                </label>
+                {(siteData.privacy || {}).enabled && (
+                  <>
+                    <input
+                      type="password"
+                      className="input-field"
+                      placeholder="Parol (saqlashda yangilanadi; bo‘sh = eski parol saqlanadi)"
+                      value={(siteData.privacy || {}).password || ''}
+                      onChange={(e) => handlePrivacyChange('password', e.target.value)}
+                      autoComplete="new-password"
+                    />
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      Yangi sayt yoki birinchi marta yoqishda parol majburiy.
+                    </span>
+                  </>
+                )}
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Havola muddati (ixtiyoriy)</span>
+                <input
+                  type="datetime-local"
+                  className="input-field"
+                  value={(siteData.privacy || {}).expiresAt || ''}
+                  onChange={(e) => handlePrivacyChange('expiresAt', e.target.value)}
+                />
+                {(siteData.privacy || {}).expiresAt && (
+                  <button type="button" className="btn btn-secondary" style={{ fontSize: '0.75rem' }} onClick={() => handlePrivacyChange('expiresAt', '')}>
+                    Muddatni olib tashlash
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <span className="label">Import / eksport</span>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 0.75rem' }}>
+                Loyihani JSON fayl sifatida zaxiralang yoki qayta yuklang.
+              </p>
+              <div className="flex-col gap-2">
+                <button type="button" className="btn btn-secondary w-full" onClick={exportSiteJson}>
+                  JSON eksport
+                </button>
+                <label className="btn btn-secondary w-full" style={{ cursor: 'pointer', textAlign: 'center' }}>
+                  JSON import
+                  <input type="file" accept="application/json,.json" onChange={importSiteJson} style={{ display: 'none' }} />
+                </label>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -940,9 +1522,28 @@ export const Builder = () => {
                       bgColor={(siteData.qrStyle || defaultQrStyle).bgColor}
                       fgColor={(siteData.qrStyle || defaultQrStyle).fgColor}
                       includeMargin={(siteData.qrStyle || defaultQrStyle).includeMargin !== false}
+                      imageSettings={publishQrImageSettings()}
                     />
                   </div>
-                  <button className="btn btn-secondary" onClick={downloadQRCode} style={{ fontSize: '0.875rem' }}>Download QR Image</button>
+                  <div className="flex gap-2 flex-wrap justify-center w-full">
+                    <button type="button" className="btn btn-secondary" onClick={downloadQRCode} style={{ fontSize: '0.875rem' }}>
+                      PNG yuklash
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={downloadQrSvg} style={{ fontSize: '0.875rem' }}>
+                      SVG yuklash
+                    </button>
+                  </div>
+                  <div ref={qrSvgExportRef} style={{ position: 'absolute', left: -9999, top: 0, width: 0, height: 0, overflow: 'hidden' }} aria-hidden>
+                    <QRCodeSVG
+                      value={publishModal.publishedUrl || ''}
+                      size={(siteData.qrStyle || defaultQrStyle).size}
+                      level={(siteData.qrStyle || defaultQrStyle).level}
+                      bgColor={(siteData.qrStyle || defaultQrStyle).bgColor}
+                      fgColor={(siteData.qrStyle || defaultQrStyle).fgColor}
+                      includeMargin={(siteData.qrStyle || defaultQrStyle).includeMargin !== false}
+                      imageSettings={publishQrImageSettings()}
+                    />
+                  </div>
                 </div>
                 <div className="w-full flex items-center justify-between p-2" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)' }}>
                   <span style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px', color: 'var(--text-secondary)' }}>{publishModal.publishedUrl}</span>
