@@ -129,10 +129,8 @@ export const Builder = () => {
 
   // Publish
   const handlePublish = () => {
-    // Generate a unique random slug: title-random6chars
-    const baseSlug = siteData.content.title.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 15) || 'site';
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const defaultSlug = `${baseSlug}-${randomSuffix}`;
+    // Generate a short unique ID (6 characters, alphanumeric, no hyphens)
+    const defaultSlug = Math.random().toString(36).substring(2, 8).toUpperCase();
     setPublishModal({ open: true, slug: defaultSlug, copied: false });
   };
 
