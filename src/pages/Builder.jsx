@@ -42,6 +42,8 @@ export const Builder = () => {
   const [loadError, setLoadError] = useState('');
   /** PDF yuklash: qator kaliti + progress (0–100) */
   const [pdfUpload, setPdfUpload] = useState(null);
+  /** Fayl qatori o‘chirish (serverga so‘rov) */
+  const [downloadDeleting, setDownloadDeleting] = useState(null);
   const [pdfQuota, setPdfQuota] = useState(null);
 
   const refreshPdfQuota = useCallback(async () => {
@@ -394,6 +396,65 @@ export const Builder = () => {
     } finally {
       setPdfUpload(null);
     }
+  };
+
+  const handleRemoveDownloadsRow = async (sectionId, itemId, itemIndex) => {
+    const auth = getStoredAuth();
+    const section = siteData.content.sections.find((s) => s.id === sectionId);
+    const item = section?.data?.items?.[itemIndex];
+    if (!item || item.id !== itemId) return;
+
+    const delKey = `${sectionId}-${itemId}`;
+    const label = (item.title || '').trim() || `PDF ${itemIndex + 1}`;
+    const msg = editSlug
+      ? `«${label}» o‘chirilsinmi?\n\nBazadagi sayt darhol yangilanadi. Vercel Blob dagi PDF ham o‘chiriladi.`
+      : `«${label}» qoralamadan olib tashlansinmi?\n\n(Sayt hali saqlanmagan — serverdagi ma’lumot o‘zgarmaydi.)`;
+
+    if (!window.confirm(msg)) return;
+
+    if (editSlug) {
+      if (!auth?.token) {
+        alert('O‘chirish uchun avval kiring.');
+        navigate('/login');
+        return;
+      }
+      setDownloadDeleting(delKey);
+      try {
+        const res = await fetch('/api/remove-download-item', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${auth.token}`,
+          },
+          body: JSON.stringify({ slug: editSlug, sectionId, itemId }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          alert(j.error || 'O‘chirib bo‘lmadi');
+          return;
+        }
+        if (j.site) {
+          setSiteData((prev) => ({
+            ...prev,
+            ...j.site,
+            qrStyle: { ...(prev.qrStyle || defaultQrStyle), ...(j.site.qrStyle || {}) },
+            seo: { ...(prev.seo || defaultSiteData.seo), ...(j.site.seo || {}) },
+            privacy: { ...(prev.privacy || defaultSiteData.privacy), ...(j.site.privacy || {}), password: '' },
+            content: j.site.content || prev.content,
+            globalStyle: j.site.globalStyle || prev.globalStyle,
+          }));
+        }
+        void refreshPdfQuota();
+      } catch (err) {
+        alert(err?.message || 'Tarmoq xatosi');
+      } finally {
+        setDownloadDeleting(null);
+      }
+      return;
+    }
+
+    const newItems = section.data.items.filter((it) => it.id !== itemId);
+    updateSectionData(sectionId, { ...section.data, items: newItems });
   };
 
   const removeSectionItem = (sectionId, itemIndex) => {
@@ -1264,105 +1325,172 @@ export const Builder = () => {
                           className="input-field"
                           value={section.data.title || ''}
                           onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Blok sarlavhasi"
+                          placeholder="Blok sarlavhasi (masalan: Fayllar)"
                         />
                         {pdfQuota && pdfQuota.limitBytes > 0 && (
                           <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
-                            Vercel Blob PDF (barcha saytlar bo‘yicha):{' '}
+                            Yuklangan PDF lar jami:{' '}
                             {(pdfQuota.usedBytes / (1024 * 1024)).toFixed(1)} /{' '}
                             {(pdfQuota.limitBytes / (1024 * 1024)).toFixed(0)} MB
                           </p>
                         )}
-                        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>
-                          Kompyuterdan PDF tanlang (Vercel Blob) yoki pastdagi maydonga tayyor havola yozing. Yuklash uchun sayt <strong>vercel dev</strong> yoki productionda <code style={{ fontSize: '0.65rem' }}>BLOB_READ_WRITE_TOKEN</code> bo‘lishi kerak.
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                          <strong>1-bosqich:</strong> har bir qatorda <strong>qora tugmani bosing</strong> — kompyuterdan PDF tanlanadi.
+                          {' '}<strong>2-bosqich (ixtiyoriy):</strong> tayyor havola bo‘lsa, pastdagi maydonga yozing.
                         </p>
                         {section.data.items?.map((item, i) => {
                           const pdfRowKey = `${section.id}-${i}`;
+                          const delKey = `${section.id}-${item.id}`;
                           const pdfBusy = pdfUpload?.key === pdfRowKey;
+                          const rowBusy = pdfBusy || downloadDeleting === delKey;
                           return (
-                          <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                          <div
+                            key={item.id}
+                            className="flex-col gap-2 p-3"
+                            style={{
+                              background: 'var(--bg-secondary)',
+                              borderRadius: 'var(--radius-md)',
+                              border: '1px solid var(--border-color)',
+                              boxShadow: 'var(--shadow-sm)',
+                            }}
+                          >
+                            <div className="flex items-center justify-between gap-2" style={{ flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                                PDF #{i + 1}
+                              </span>
+                              {editSlug ? (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Saqlangan sayt — o‘chirsa DB yangilanadi</span>
+                              ) : (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Qoralama — «Saqlash» gacha faqat brauzerda</span>
+                              )}
+                            </div>
                             <input
                               type="text"
                               className="input-field"
                               value={item.title}
-                              disabled={pdfBusy}
+                              disabled={rowBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
                                 items[i] = { ...items[i], title: e.target.value };
                                 updateSectionData(section.id, { ...section.data, items });
                               }}
-                              placeholder="Fayl nomi"
+                              placeholder={`Ko‘rinadigan nom (masalan: Katalog)`}
                             />
-                            <label
-                              className="btn btn-primary w-full"
+                            <div
                               style={{
-                                fontSize: '0.8rem',
-                                cursor: pdfBusy ? 'wait' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem',
-                                opacity: pdfBusy ? 0.9 : 1,
-                                pointerEvents: pdfBusy ? 'none' : 'auto',
-                                fontWeight: 600,
+                                border: '2px dashed var(--border-color)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '0.65rem',
+                                background: 'var(--bg-tertiary)',
                               }}
                             >
-                              {pdfBusy ? (
-                                <>
-                                  <Loader2 size={18} className="qr-animate-spin" aria-hidden />
-                                  <span>
-                                    PDF yuklanmoqda… {pdfUpload.progress > 0 ? `${pdfUpload.progress}%` : ''}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <FileUp size={18} aria-hidden />
-                                  <span>Kompyuterdan PDF yuklash (max ~20 MB)</span>
-                                </>
-                              )}
-                              <input
-                                type="file"
-                                accept="application/pdf,.pdf"
-                                disabled={pdfBusy}
-                                style={{ display: 'none' }}
-                                aria-label="PDF fayl tanlash"
-                                onChange={(ev) => { void handleDownloadsPdfPick(section.id, i, ev); }}
-                              />
-                            </label>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '-0.25rem 0 0' }}>yoki</span>
+                              <p style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem', textAlign: 'center' }}>
+                                PDF ni bu yerga yuklash — <strong>tugmani bosing</strong>
+                              </p>
+                              <label
+                                className="btn btn-primary w-full"
+                                style={{
+                                  fontSize: '0.8rem',
+                                  cursor: pdfBusy ? 'wait' : 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '0.5rem',
+                                  opacity: rowBusy ? 0.88 : 1,
+                                  pointerEvents: rowBusy ? 'none' : 'auto',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {pdfBusy ? (
+                                  <>
+                                    <Loader2 size={18} className="qr-animate-spin" aria-hidden />
+                                    <span>
+                                      Yuklanmoqda… {pdfUpload.progress > 0 ? `${pdfUpload.progress}%` : ''}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FileUp size={18} aria-hidden />
+                                    <span>Bu yerni bosing — PDF tanlang (max ~20 MB)</span>
+                                  </>
+                                )}
+                                <input
+                                  type="file"
+                                  accept="application/pdf,.pdf"
+                                  disabled={rowBusy}
+                                  style={{ display: 'none' }}
+                                  aria-label={`PDF #${i + 1} tanlash`}
+                                  onChange={(ev) => { void handleDownloadsPdfPick(section.id, i, ev); }}
+                                />
+                              </label>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                              Yoki tashqi havola
+                            </div>
                             <input
                               type="text"
                               className="input-field"
                               value={item.url}
-                              disabled={pdfBusy}
+                              disabled={rowBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
                                 const { sizeBytes: _sb, ...rest } = items[i];
                                 items[i] = { ...rest, url: e.target.value };
                                 updateSectionData(section.id, { ...section.data, items });
                               }}
-                              placeholder="Tashqi havola: PDF, vCard .vcf, …"
+                              placeholder="https://… (PDF yoki vCard)"
                             />
                             <input
                               type="text"
                               className="input-field"
                               value={item.fileType || ''}
-                              disabled={pdfBusy}
+                              disabled={rowBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
                                 items[i] = { ...items[i], fileType: e.target.value };
                                 updateSectionData(section.id, { ...section.data, items });
                               }}
-                              placeholder="Turi (PDF, vCard)"
+                              placeholder="Turi: PDF, vCard, …"
                             />
-                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} disabled={pdfBusy} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
-                              O‘chirish
+                            <button
+                              type="button"
+                              className="btn btn-secondary w-full"
+                              style={{
+                                fontSize: '0.75rem',
+                                borderColor: '#fecaca',
+                                color: '#b91c1c',
+                                background: '#fef2f2',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                              }}
+                              disabled={rowBusy}
+                              onClick={() => { void handleRemoveDownloadsRow(section.id, item.id, i); }}
+                            >
+                              {downloadDeleting === delKey ? (
+                                <>
+                                  <Loader2 size={14} className="qr-animate-spin" aria-hidden />
+                                  O‘chirilmoqda…
+                                </>
+                              ) : (
+                                `Faqat shu PDF (#${i + 1}) ni o‘chirish`
+                              )}
                             </button>
                           </div>
                           );
                         })}
-                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), title: '', url: '', fileType: '' }] })}>
-                          + Fayl
+                        <button
+                          type="button"
+                          className="btn btn-secondary w-full"
+                          style={{ fontSize: '0.75rem' }}
+                          onClick={() =>
+                            updateSectionData(section.id, {
+                              ...section.data,
+                              items: [...(section.data.items || []), { id: generateId(), title: '', url: '', fileType: '' }],
+                            })}
+                        >
+                          + Yana bir PDF qatori qo‘shish
                         </button>
                       </div>
                     )}
