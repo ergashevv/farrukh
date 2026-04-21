@@ -4,6 +4,7 @@ import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, Gr
 import { defaultSiteData, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
+import { uploadImageToBlob } from '../core/blobUpload';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -73,14 +74,14 @@ export const Builder = () => {
     setSiteData({ ...siteData, content: { ...siteData.content, [key]: value } });
   };
 
-  const handleBgUpload = (e) => {
+  const handleBgUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-       handleGlobalStyleChange('backgroundImage', `url(${event.target.result})`);
-    };
-    reader.readAsDataURL(file);
+    e.target.value = '';
+    const dataUrl = await fileToAvatarDataUrl(file, 1920);
+    if (!dataUrl) return;
+    const blobUrl = await uploadImageToBlob(dataUrl, 'background');
+    handleGlobalStyleChange('backgroundImage', `url(${blobUrl || dataUrl})`);
   };
 
   const handleAvatarUpload = async (e) => {
@@ -88,7 +89,9 @@ export const Builder = () => {
     if (!file) return;
     e.target.value = '';
     const dataUrl = await fileToAvatarDataUrl(file, 512);
-    if (dataUrl) handleContentChange('avatar', dataUrl);
+    if (!dataUrl) return;
+    const blobUrl = await uploadImageToBlob(dataUrl, 'avatar');
+    handleContentChange('avatar', blobUrl || dataUrl);
   };
 
   // Sections management
