@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, startTransition } from
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
 import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight, Loader2, FileUp } from 'lucide-react';
-import { defaultSiteData, defaultQrStyle, generateId } from '../core/schema';
+import { defaultSiteData, defaultQrStyle, generateId, createFreshDefaultSiteData } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
 import { uploadImageToBlob, uploadPdfToBlob } from '../core/blobUpload';
@@ -26,12 +26,28 @@ const exampleImages = [
 
 export const Builder = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const editSlug = (searchParams.get('slug') || '').trim().toUpperCase();
 
   const [siteData, setSiteData] = useState(() => {
-    const saved = localStorage.getItem('draftSiteData');
-    return saved ? JSON.parse(saved) : defaultSiteData;
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('new') === '1' && !(p.get('slug') || '').trim()) {
+        try {
+          localStorage.removeItem('draftSiteData');
+        } catch {
+          /* ignore */
+        }
+        return createFreshDefaultSiteData();
+      }
+    }
+    try {
+      const saved = localStorage.getItem('draftSiteData');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      /* ignore */
+    }
+    return createFreshDefaultSiteData();
   });
   
   const [activeTab, setActiveTab] = useState('design');
@@ -67,6 +83,21 @@ export const Builder = () => {
       void refreshPdfQuota();
     });
   }, [refreshPdfQuota, editSlug]);
+
+  /** Dashboard dan «Yangi sayt» (?new=1): qoralama tozalansin, URL dan param olib tashlansin. */
+  useEffect(() => {
+    if (editSlug) return;
+    if (searchParams.get('new') !== '1') return;
+    try {
+      localStorage.removeItem('draftSiteData');
+    } catch {
+      /* ignore */
+    }
+    startTransition(() => {
+      setSiteData(createFreshDefaultSiteData());
+      setSearchParams({}, { replace: true });
+    });
+  }, [editSlug, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!editSlug) {

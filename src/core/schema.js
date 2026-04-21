@@ -74,3 +74,18 @@ export const defaultSiteData = {
     ]
   }
 };
+
+/** Yangi loyiha: shablon + barcha id lar yangi (localStorage qoralamasidan mustaqil). */
+export function createFreshDefaultSiteData() {
+  const fresh = JSON.parse(JSON.stringify(defaultSiteData));
+  fresh.id = generateId();
+  for (const section of fresh.content.sections) {
+    section.id = generateId();
+    if (Array.isArray(section.data?.items)) {
+      for (const it of section.data.items) {
+        it.id = generateId();
+      }
+    }
+  }
+  return fresh;
+}

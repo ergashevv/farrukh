@@ -93,7 +93,7 @@ export const Dashboard = () => {
             Saqlangan: {sites.length} / {MAX}. Tahrirlash yoki o‘chirish mumkin.
           </p>
           {canCreate ? (
-            <Link to="/builder" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+            <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
               <Plus size={16} /> Yangi sayt
             </Link>
           ) : (
@@ -109,7 +109,7 @@ export const Dashboard = () => {
         {!loading && sites.length === 0 && !err && (
           <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <p style={{ margin: '0 0 1rem' }}>Hali sayt yo‘q.</p>
-            <Link to="/builder" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+            <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
               Birinchi saytni yaratish
             </Link>
           </div>
