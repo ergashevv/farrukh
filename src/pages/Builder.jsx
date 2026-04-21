@@ -3,6 +3,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin } from 'lucide-react';
 import { defaultSiteData, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
+import { fileToAvatarDataUrl } from '../core/imageUtils';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -30,9 +31,14 @@ export const Builder = () => {
   const iframeRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('draftSiteData', JSON.stringify(siteData));
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage({ type: 'UPDATE_SITE_DATA', payload: siteData }, '*');
+    try {
+      localStorage.setItem('draftSiteData', JSON.stringify(siteData));
+    } catch (err) {
+      console.warn('Draft localStorage save failed (image too large or quota)', err);
+    }
+    const win = iframeRef.current?.contentWindow;
+    if (win) {
+      win.postMessage({ type: 'UPDATE_SITE_DATA', payload: siteData }, '*');
     }
   }, [siteData]);
 
@@ -77,13 +83,12 @@ export const Builder = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleAvatarUpload = (e) => {
+  const handleAvatarUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => handleContentChange('avatar', ev.target.result);
-    reader.readAsDataURL(file);
     e.target.value = '';
+    const dataUrl = await fileToAvatarDataUrl(file, 512);
+    if (dataUrl) handleContentChange('avatar', dataUrl);
   };
 
   // Sections management

@@ -231,12 +231,19 @@ export const Renderer = ({ data, onReorder }) => {
         {content.avatar && (
           <img 
             src={content.avatar} alt={content.title || 'Avatar'}
+            loading="eager"
+            decoding="async"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
             style={{
               width: '96px',
               height: '96px',
               borderRadius: ((content.avatarShape || 'circle') === 'square' ? '16px' : '50%'),
               objectFit: 'cover',
               marginBottom: '1.5rem',
+              flexShrink: 0,
+              display: 'block',
               border: `3px solid ${globalStyle.buttonStyle === 'glass' ? 'rgba(255,255,255,0.5)' : 'transparent'}`,
               boxShadow: globalStyle.buttonStyle === 'glass' ? '0 4px 15px rgba(0,0,0,0.1)' : 'none'
             }}

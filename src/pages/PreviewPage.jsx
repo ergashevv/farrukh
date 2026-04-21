@@ -2,8 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Renderer } from '../components/Renderer/Renderer';
 import { defaultSiteData } from '../core/schema';
 
+function loadDraftFromStorage() {
+  try {
+    const stored = localStorage.getItem('draftSiteData');
+    if (stored) return JSON.parse(stored);
+  } catch {
+    /* ignore */
+  }
+  return defaultSiteData;
+}
+
 export const PreviewPage = () => {
-  const [data, setData] = useState(defaultSiteData);
+  const [data, setData] = useState(loadDraftFromStorage);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -12,15 +22,6 @@ export const PreviewPage = () => {
       }
     };
     window.addEventListener('message', handleMessage);
-
-    // Initial load from local storage if available (useful for direct navigation/publish)
-    const stored = localStorage.getItem('draftSiteData');
-    if (stored) {
-      try {
-        setData(JSON.parse(stored));
-      } catch (e) {}
-    }
-
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
@@ -29,7 +30,16 @@ export const PreviewPage = () => {
   };
 
   return (
-    <div style={{ width: '100%', height: '100vh', margin: 0, padding: 0 }}>
+    <div
+      style={{
+        width: '100%',
+        minHeight: '100vh',
+        margin: 0,
+        padding: 0,
+        paddingTop: 'max(4px, env(safe-area-inset-top, 0px))',
+        boxSizing: 'border-box'
+      }}
+    >
       {data && <Renderer data={data} onReorder={handleReorder} />}
     </div>
   );
