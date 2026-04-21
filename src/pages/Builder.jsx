@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin } from 'lucide-react';
 import { defaultSiteData, generateId } from '../core/schema';
@@ -7,6 +8,7 @@ import { fileToAvatarDataUrl } from '../core/imageUtils';
 import { uploadImageToBlob } from '../core/blobUpload';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { getStoredAuth, clearAuth } from '../auth';
 
 const patterns = [
   { id: 'none', name: 'None', url: '' },
@@ -21,6 +23,10 @@ const exampleImages = [
 ];
 
 export const Builder = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editSlug = (searchParams.get('slug') || '').trim().toUpperCase();
+
   const [siteData, setSiteData] = useState(() => {
     const saved = localStorage.getItem('draftSiteData');
     return saved ? JSON.parse(saved) : defaultSiteData;
@@ -30,6 +36,34 @@ export const Builder = () => {
   const [previewMode, setPreviewMode] = useState('mobile');
   const [publishModal, setPublishModal] = useState({ open: false, slug: '', copied: false });
   const iframeRef = useRef(null);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    if (!editSlug) {
+      setLoadError('');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/get-site?slug=${encodeURIComponent(editSlug)}`);
+        if (!res.ok) {
+          if (!cancelled) setLoadError('Sayt topilmadi');
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) {
+          setSiteData(data);
+          setLoadError('');
+        }
+      } catch {
+        if (!cancelled) setLoadError('Yuklashda xato');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editSlug]);
 
   useEffect(() => {
     try {
@@ -148,31 +182,43 @@ export const Builder = () => {
 
   // Publish
   const handlePublish = () => {
-    // Generate a short unique ID (6 characters, alphanumeric, no hyphens)
-    const defaultSlug = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const defaultSlug = editSlug || Math.random().toString(36).substring(2, 8).toUpperCase();
     setPublishModal({ open: true, slug: defaultSlug, copied: false });
   };
 
   const confirmPublish = async () => {
+    const auth = getStoredAuth();
+    if (!auth?.token) {
+      alert('Saqlash uchun avval kirishingiz kerak.');
+      navigate('/login');
+      return;
+    }
     setPublishModal(prev => ({ ...prev, isPublishing: true }));
     try {
-      const response = await fetch('/api/publish', {
+      const slugNorm = publishModal.slug.trim().toUpperCase();
+      const response = await fetch('/api/site-save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`,
+        },
         body: JSON.stringify({
-          slug: publishModal.slug,
-          data: siteData
-        })
+          slug: slugNorm,
+          data: siteData,
+        }),
       });
 
-      if (!response.ok) throw new Error('Failed to publish');
+      const j = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(j.error || 'Saqlanmadi');
+      }
 
-      const liveUrl = `${window.location.origin}/${publishModal.slug}`;
-      localStorage.setItem(`published_${publishModal.slug}`, JSON.stringify(siteData)); // Keep local as cache
-      setPublishModal({ ...publishModal, publishedUrl: liveUrl, isPublishing: false });
+      const liveUrl = `${window.location.origin}/${slugNorm}`;
+      localStorage.setItem(`published_${slugNorm}`, JSON.stringify(siteData));
+      setPublishModal({ ...publishModal, slug: slugNorm, publishedUrl: liveUrl, isPublishing: false });
     } catch (error) {
       console.error('Publish error:', error);
-      alert('Failed to publish site. Please try again.');
+      alert(error.message || 'Saqlashda xato. Qayta urinib ko‘ring.');
       setPublishModal(prev => ({ ...prev, isPublishing: false }));
     }
   };
@@ -198,8 +244,24 @@ export const Builder = () => {
             <QrCode className="text-primary-color" size={24} />
             <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Mini Site Builder</h2>
           </div>
-          <button className="btn btn-primary" onClick={handlePublish}>Publish</button>
+          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+            <Link to="/" className="btn btn-secondary" style={{ fontSize: '0.8rem', textDecoration: 'none' }}>
+              Saytlarim
+            </Link>
+            {getStoredAuth()?.token && (
+              <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => { clearAuth(); navigate('/login'); }}>
+                Chiqish
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={handlePublish}>Saqlash</button>
+          </div>
         </div>
+
+        {loadError && (
+          <div style={{ padding: '0.75rem 1.5rem', background: '#fef2f2', color: '#b91c1c', fontSize: '0.875rem' }}>
+            {loadError}
+          </div>
+        )}
 
         <div className="flex border-b" style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', position: 'sticky', top: '73px', zIndex: 9 }}>
           <button 
@@ -584,16 +646,27 @@ export const Builder = () => {
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card" style={{ width: '480px', maxWidth: '90%', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
             <button style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} onClick={() => setPublishModal({ open: false, slug: '', copied: false })}><X size={24} /></button>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Publish Your Site</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Saytni saqlash</h2>
             
             {!publishModal.publishedUrl ? (
               <>
                 <div>
-                  <span className="label">Custom URL Slug</span>
+                  <span className="label">URL manzil (slug)</span>
                   <div className="flex items-center gap-2 mt-2">
-                    <span style={{ color: 'var(--text-secondary)' }}>edevzi.xyz/</span>
-                    <input type="text" className="input-field" value={publishModal.slug} onChange={(e) => setPublishModal({ ...publishModal, slug: e.target.value })} />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{typeof window !== 'undefined' ? window.location.origin : ''}/</span>
+                    <input
+                      type="text"
+                      className="input-field"
+                      readOnly={!!editSlug}
+                      value={publishModal.slug}
+                      onChange={(e) => setPublishModal({ ...publishModal, slug: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                    />
                   </div>
+                  {editSlug && (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: 0 }}>
+                      Tahrirlash rejimida slug o‘zgarmaydi.
+                    </p>
+                  )}
                 </div>
                                 <button 
                   className="btn btn-primary w-full" 
@@ -601,13 +674,13 @@ export const Builder = () => {
                   onClick={confirmPublish}
                   disabled={publishModal.isPublishing}
                 >
-                  {publishModal.isPublishing ? 'Publishing...' : 'Confirm & Deploy'}
+                  {publishModal.isPublishing ? 'Saqlanmoqda...' : 'Saqlash'}
                 </button>
 
               </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{ background: '#dcfce7', color: '#166534', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><Check size={20} /><span>Site Published Successfully!</span></div>
+                <div style={{ background: '#dcfce7', color: '#166534', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><Check size={20} /><span>Sayt saqlandi!</span></div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                   <div style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
                     <QRCodeCanvas id="qr-canvas" value={publishModal.publishedUrl} size={200} level="H" includeMargin={true} />

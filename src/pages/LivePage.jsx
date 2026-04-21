@@ -36,7 +36,7 @@ export const LivePage = () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'Inter' }}>
         <h2>Page not found</h2>
         <p style={{ color: '#71717a' }}>This site might have been moved or deleted.</p>
-        <Link to="/" style={{ marginTop: '1rem', color: '#0ea5e9' }}>Go to Builder</Link>
+        <Link to="/" style={{ marginTop: '1rem', color: '#0ea5e9' }}>Bosh sahifa</Link>
       </div>
     );
   }
