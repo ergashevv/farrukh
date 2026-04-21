@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, startTransition } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
-import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight, Loader2 } from 'lucide-react';
+import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight, Loader2, FileUp } from 'lucide-react';
 import { defaultSiteData, defaultQrStyle, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
@@ -1273,6 +1273,9 @@ export const Builder = () => {
                             {(pdfQuota.limitBytes / (1024 * 1024)).toFixed(0)} MB
                           </p>
                         )}
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>
+                          Kompyuterdan PDF tanlang (Vercel Blob) yoki pastdagi maydonga tayyor havola yozing. Yuklash uchun sayt <strong>vercel dev</strong> yoki productionda <code style={{ fontSize: '0.65rem' }}>BLOB_READ_WRITE_TOKEN</code> bo‘lishi kerak.
+                        </p>
                         {section.data.items?.map((item, i) => {
                           const pdfRowKey = `${section.id}-${i}`;
                           const pdfBusy = pdfUpload?.key === pdfRowKey;
@@ -1290,6 +1293,43 @@ export const Builder = () => {
                               }}
                               placeholder="Fayl nomi"
                             />
+                            <label
+                              className="btn btn-primary w-full"
+                              style={{
+                                fontSize: '0.8rem',
+                                cursor: pdfBusy ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                opacity: pdfBusy ? 0.9 : 1,
+                                pointerEvents: pdfBusy ? 'none' : 'auto',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {pdfBusy ? (
+                                <>
+                                  <Loader2 size={18} className="qr-animate-spin" aria-hidden />
+                                  <span>
+                                    PDF yuklanmoqda… {pdfUpload.progress > 0 ? `${pdfUpload.progress}%` : ''}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <FileUp size={18} aria-hidden />
+                                  <span>Kompyuterdan PDF yuklash (max ~20 MB)</span>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="application/pdf,.pdf"
+                                disabled={pdfBusy}
+                                style={{ display: 'none' }}
+                                aria-label="PDF fayl tanlash"
+                                onChange={(ev) => { void handleDownloadsPdfPick(section.id, i, ev); }}
+                              />
+                            </label>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '-0.25rem 0 0' }}>yoki</span>
                             <input
                               type="text"
                               className="input-field"
@@ -1301,39 +1341,8 @@ export const Builder = () => {
                                 items[i] = { ...rest, url: e.target.value };
                                 updateSectionData(section.id, { ...section.data, items });
                               }}
-                              placeholder="URL (PDF, vCard .vcf, ...) yoki Blob dan yuklang"
+                              placeholder="Tashqi havola: PDF, vCard .vcf, …"
                             />
-                            <label
-                              className="btn btn-secondary w-full"
-                              style={{
-                                fontSize: '0.75rem',
-                                cursor: pdfBusy ? 'wait' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem',
-                                opacity: pdfBusy ? 0.85 : 1,
-                                pointerEvents: pdfBusy ? 'none' : 'auto',
-                              }}
-                            >
-                              {pdfBusy ? (
-                                <>
-                                  <Loader2 size={16} className="qr-animate-spin" aria-hidden />
-                                  <span>
-                                    Yuklanmoqda… {pdfUpload.progress > 0 ? `${pdfUpload.progress}%` : ''}
-                                  </span>
-                                </>
-                              ) : (
-                                <span>PDF ni Vercel Blob ga yuklash (max ~20 MB)</span>
-                              )}
-                              <input
-                                type="file"
-                                accept="application/pdf,.pdf"
-                                disabled={pdfBusy}
-                                style={{ display: 'none' }}
-                                onChange={(ev) => { void handleDownloadsPdfPick(section.id, i, ev); }}
-                              />
-                            </label>
                             <input
                               type="text"
                               className="input-field"
