@@ -168,6 +168,61 @@ select.input-field {
   padding-right: 2rem;
 }
 
+/* PDF «Fayllar» bo‘limi — maydonlar va avatar uslubidagi yuklovchi */
+.downloads-pdf-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: linear-gradient(165deg, var(--bg-secondary) 0%, var(--bg-tertiary) 120%);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1rem 0.875rem;
+}
+.downloads-pdf-field-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+.downloads-pdf-input {
+  font-size: 0.8125rem;
+  padding: 0.625rem 0.75rem;
+}
+.downloads-pdf-hint {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  font-style: italic;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+.downloads-pdf-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.downloads-pdf-drop:not(.downloads-pdf-drop--busy):hover {
+  border-color: var(--primary-color) !important;
+  background-color: var(--bg-secondary) !important;
+  box-shadow: 0 0 0 1px var(--primary-ring);
+}
+.downloads-pdf-quota-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .label {
   display: block;
   font-size: 0.7rem;
