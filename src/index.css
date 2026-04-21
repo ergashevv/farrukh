@@ -405,3 +405,19 @@ input[type="color"]::-webkit-color-swatch {
     will-change: auto;
   }
 }
+
+@keyframes qr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.qr-animate-spin {
+  animation: qr-spin 0.85s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-animate-spin {
+    animation: none;
+  }
+}

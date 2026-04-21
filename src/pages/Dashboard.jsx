@@ -4,7 +4,7 @@ import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink } from 'lucide-react
 import { getStoredAuth, clearAuth } from '../auth';
 import { SitePreviewThumb } from '../components/SitePreviewThumb';
 
-const MAX = 5;
+const MAX = 10;
 
 export const Dashboard = () => {
   const navigate = useNavigate();

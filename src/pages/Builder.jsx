@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect, startTransition } from 'react';
+import React, { useState, useRef, useEffect, useCallback, startTransition } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeCanvas, QRCodeSVG } from 'qrcode.react';
-import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Smartphone, Monitor, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight, Loader2 } from 'lucide-react';
 import { defaultSiteData, defaultQrStyle, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
-import { uploadImageToBlob } from '../core/blobUpload';
+import { uploadImageToBlob, uploadPdfToBlob } from '../core/blobUpload';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getStoredAuth, clearAuth } from '../auth';
@@ -40,6 +40,31 @@ export const Builder = () => {
   const iframeRef = useRef(null);
   const qrSvgExportRef = useRef(null);
   const [loadError, setLoadError] = useState('');
+  /** PDF yuklash: qator kaliti + progress (0–100) */
+  const [pdfUpload, setPdfUpload] = useState(null);
+  const [pdfQuota, setPdfQuota] = useState(null);
+
+  const refreshPdfQuota = useCallback(async () => {
+    const auth = getStoredAuth();
+    if (!auth?.token) {
+      setPdfQuota(null);
+      return;
+    }
+    try {
+      const r = await fetch('/api/pdf-quota', { headers: { Authorization: `Bearer ${auth.token}` } });
+      if (!r.ok) return;
+      const j = await r.json();
+      setPdfQuota(j);
+    } catch {
+      setPdfQuota(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    startTransition(() => {
+      void refreshPdfQuota();
+    });
+  }, [refreshPdfQuota, editSlug]);
 
   useEffect(() => {
     if (!editSlug) {
@@ -322,6 +347,55 @@ export const Builder = () => {
     handleContentChange('sections', newSections);
   };
 
+  const handleDownloadsPdfPick = async (sectionId, itemIndex, e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const auth = getStoredAuth();
+    if (!auth?.token) {
+      alert('PDF yuklash uchun avval kiring.');
+      navigate('/login');
+      return;
+    }
+
+    const section = siteData.content.sections.find((s) => s.id === sectionId);
+    if (!section?.data?.items?.[itemIndex]) return;
+
+    const key = `${sectionId}-${itemIndex}`;
+    setPdfUpload({ key, progress: 0 });
+    try {
+      const prev = section.data.items[itemIndex];
+      const replaceUrl =
+        prev.url && String(prev.url).includes('blob.vercel-storage.com') ? String(prev.url) : '';
+      const result = await uploadPdfToBlob(file, auth.token, {
+        replaceUrl,
+        onUploadProgress: ({ percentage }) => {
+          const p = Math.min(100, Math.max(0, Math.round(Number(percentage) || 0)));
+          setPdfUpload((prevState) => (prevState?.key === key ? { key, progress: p } : prevState));
+        },
+      });
+      if (!result.ok) {
+        alert(result.error || 'Yuklash muvaffaqiyatsiz');
+        return;
+      }
+      const items = [...section.data.items];
+      const baseTitle = (prev.title || '').trim();
+      const fromFile = file.name.replace(/\.pdf$/i, '').trim();
+      items[itemIndex] = {
+        ...prev,
+        url: result.url,
+        fileType: 'PDF',
+        sizeBytes: result.sizeBytes,
+        title: baseTitle || fromFile || prev.title,
+      };
+      updateSectionData(sectionId, { ...section.data, items });
+      void refreshPdfQuota();
+    } finally {
+      setPdfUpload(null);
+    }
+  };
+
   const removeSectionItem = (sectionId, itemIndex) => {
     const section = siteData.content.sections.find((s) => s.id === sectionId);
     if (!section?.data?.items) return;
@@ -375,6 +449,7 @@ export const Builder = () => {
         privacy: { ...(prev.privacy || {}), password: '' },
       }));
       setPublishModal({ ...publishModal, slug: slugNorm, publishedUrl: liveUrl, isPublishing: false });
+      void refreshPdfQuota();
     } catch (error) {
       console.error('Publish error:', error);
       alert(error.message || 'Saqlashda xato. Qayta urinib ko‘ring.');
@@ -1191,12 +1266,23 @@ export const Builder = () => {
                           onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
                           placeholder="Blok sarlavhasi"
                         />
-                        {section.data.items?.map((item, i) => (
+                        {pdfQuota && pdfQuota.limitBytes > 0 && (
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
+                            Vercel Blob PDF (barcha saytlar bo‘yicha):{' '}
+                            {(pdfQuota.usedBytes / (1024 * 1024)).toFixed(1)} /{' '}
+                            {(pdfQuota.limitBytes / (1024 * 1024)).toFixed(0)} MB
+                          </p>
+                        )}
+                        {section.data.items?.map((item, i) => {
+                          const pdfRowKey = `${section.id}-${i}`;
+                          const pdfBusy = pdfUpload?.key === pdfRowKey;
+                          return (
                           <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
                             <input
                               type="text"
                               className="input-field"
                               value={item.title}
+                              disabled={pdfBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
                                 items[i] = { ...items[i], title: e.target.value };
@@ -1208,17 +1294,51 @@ export const Builder = () => {
                               type="text"
                               className="input-field"
                               value={item.url}
+                              disabled={pdfBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
-                                items[i] = { ...items[i], url: e.target.value };
+                                const { sizeBytes: _sb, ...rest } = items[i];
+                                items[i] = { ...rest, url: e.target.value };
                                 updateSectionData(section.id, { ...section.data, items });
                               }}
-                              placeholder="URL (PDF, vCard .vcf, ...)"
+                              placeholder="URL (PDF, vCard .vcf, ...) yoki Blob dan yuklang"
                             />
+                            <label
+                              className="btn btn-secondary w-full"
+                              style={{
+                                fontSize: '0.75rem',
+                                cursor: pdfBusy ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                opacity: pdfBusy ? 0.85 : 1,
+                                pointerEvents: pdfBusy ? 'none' : 'auto',
+                              }}
+                            >
+                              {pdfBusy ? (
+                                <>
+                                  <Loader2 size={16} className="qr-animate-spin" aria-hidden />
+                                  <span>
+                                    Yuklanmoqda… {pdfUpload.progress > 0 ? `${pdfUpload.progress}%` : ''}
+                                  </span>
+                                </>
+                              ) : (
+                                <span>PDF ni Vercel Blob ga yuklash (max ~20 MB)</span>
+                              )}
+                              <input
+                                type="file"
+                                accept="application/pdf,.pdf"
+                                disabled={pdfBusy}
+                                style={{ display: 'none' }}
+                                onChange={(ev) => { void handleDownloadsPdfPick(section.id, i, ev); }}
+                              />
+                            </label>
                             <input
                               type="text"
                               className="input-field"
                               value={item.fileType || ''}
+                              disabled={pdfBusy}
                               onChange={(e) => {
                                 const items = [...section.data.items];
                                 items[i] = { ...items[i], fileType: e.target.value };
@@ -1226,11 +1346,12 @@ export const Builder = () => {
                               }}
                               placeholder="Turi (PDF, vCard)"
                             />
-                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
+                            <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} disabled={pdfBusy} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
                               O‘chirish
                             </button>
                           </div>
-                        ))}
+                          );
+                        })}
                         <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), title: '', url: '', fileType: '' }] })}>
                           + Fayl
                         </button>
