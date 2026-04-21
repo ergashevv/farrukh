@@ -180,6 +180,13 @@ export const Builder = () => {
     handleContentChange('sections', newSections);
   };
 
+  const removeSectionItem = (sectionId, itemIndex) => {
+    const section = siteData.content.sections.find((s) => s.id === sectionId);
+    if (!section?.data?.items) return;
+    const newItems = section.data.items.filter((_, idx) => idx !== itemIndex);
+    updateSectionData(sectionId, { items: newItems });
+  };
+
   // Publish
   const handlePublish = () => {
     const defaultSlug = editSlug || Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -523,21 +530,32 @@ export const Builder = () => {
                                     }}
                                   >
                                     {section.type === 'links' ? (
-                                      <>
-                                        <div className="flex gap-2 items-center">
-                                          <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex' }}><GripVertical size={16} color="var(--text-muted)" /></div>
+                                      <div className="flex gap-2 items-start w-full">
+                                        <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex', paddingTop: '0.45rem' }}>
+                                          <GripVertical size={16} color="var(--text-muted)" />
+                                        </div>
+                                        <div className="flex-col gap-2" style={{ flex: 1, minWidth: 0 }}>
                                           <input type="text" className="input-field" value={item.title} onChange={(e) => {
                                             const newItems = [...section.data.items]; newItems[i].title = e.target.value; updateSectionData(section.id, { items: newItems });
                                           }} placeholder="Link Title" />
+                                          <input type="text" className="input-field" value={item.url} onChange={(e) => {
+                                            const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
+                                          }} placeholder="URL" />
                                         </div>
-                                        <input type="text" className="input-field" value={item.url} onChange={(e) => {
-                                          const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
-                                        }} placeholder="URL" />
-                                      </>
+                                        <button
+                                          type="button"
+                                          aria-label="Linkni o‘chirish"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={() => removeSectionItem(section.id, i)}
+                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.35rem', flexShrink: 0, alignSelf: 'flex-start' }}
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </div>
                                     ) : (
                                       <div className="flex gap-2 items-center w-full">
-                                        <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex' }}><GripVertical size={16} color="var(--text-muted)" /></div>
-                                        <select className="input-field" style={{ width: '40%' }} value={item.platform} onChange={(e) => {
+                                        <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex', flexShrink: 0 }}><GripVertical size={16} color="var(--text-muted)" /></div>
+                                        <select className="input-field" style={{ width: '38%', minWidth: 0 }} value={item.platform} onChange={(e) => {
                                             const newItems = [...section.data.items]; newItems[i].platform = e.target.value; updateSectionData(section.id, { items: newItems });
                                         }}>
                                             <option value="twitter">Twitter</option>
@@ -547,9 +565,18 @@ export const Builder = () => {
                                             <option value="youtube">YouTube</option>
                                             <option value="telegram">Telegram</option>
                                         </select>
-                                        <input type="text" className="input-field" style={{ width: '60%' }} value={item.url} onChange={(e) => {
+                                        <input type="text" className="input-field" style={{ flex: 1, minWidth: 0 }} value={item.url} onChange={(e) => {
                                           const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
                                         }} placeholder="URL" />
+                                        <button
+                                          type="button"
+                                          aria-label="Ijtimoiy tarmoqni o‘chirish"
+                                          onPointerDown={(e) => e.stopPropagation()}
+                                          onClick={() => removeSectionItem(section.id, i)}
+                                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.35rem', flexShrink: 0 }}
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
                                       </div>
                                     )}
                                   </div>
