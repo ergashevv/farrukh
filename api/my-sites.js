@@ -24,10 +24,29 @@ export default async function handler(req, res) {
     const sites = rows.map((r) => {
       const data = typeof r.data === 'string' ? JSON.parse(r.data) : r.data;
       const title = data?.content?.title || r.slug;
+      const gs = data?.globalStyle || {};
+      const content = data?.content || {};
+      let avatarUrl = content.avatar || null;
+      if (avatarUrl && typeof avatarUrl === 'string') {
+        const isHttp = /^https?:\/\//i.test(avatarUrl);
+        const isSmallData = avatarUrl.startsWith('data:') && avatarUrl.length < 14000;
+        if (!isHttp && !isSmallData) avatarUrl = null;
+      } else {
+        avatarUrl = null;
+      }
+
       return {
         slug: r.slug,
         title,
-        updatedAt: r.updated_at
+        updatedAt: r.updated_at,
+        preview: {
+          backgroundColor: gs.backgroundColor || '#ffffff',
+          backgroundGradient: gs.backgroundGradient || null,
+          textColor: gs.textColor || '#18181b',
+          primaryColor: gs.primaryColor || '#000000',
+          avatarUrl,
+          avatarShape: content.avatarShape || 'circle',
+        },
       };
     });
 

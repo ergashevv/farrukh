@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink } from 'lucide-react';
 import { getStoredAuth, clearAuth } from '../auth';
+import { SitePreviewThumb } from '../components/SitePreviewThumb';
 
 const MAX = 5;
 
@@ -117,14 +118,20 @@ export const Dashboard = () => {
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {sites.map((s) => (
             <li key={s.slug} className="card" style={{ padding: '1rem 1.25rem' }}>
-              <div className="flex justify-between items-start gap-3" style={{ flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '1rem' }}>{s.title}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                    /{s.slug}
+              <div
+                className="flex justify-between items-center gap-3"
+                style={{ flexWrap: 'wrap', alignItems: 'stretch' }}
+              >
+                <div className="flex gap-3 items-center" style={{ flex: 1, minWidth: 0 }}>
+                  <SitePreviewThumb preview={s.preview} title={s.title} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>{s.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      /{s.slug}
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2 items-center" style={{ flexWrap: 'wrap' }}>
+                <div className="flex gap-2 items-center" style={{ flexWrap: 'wrap', flexShrink: 0 }}>
                   <a
                     href={`/${s.slug}`}
                     target="_blank"
