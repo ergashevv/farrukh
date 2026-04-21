@@ -1,8 +1,17 @@
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
+export const defaultQrStyle = {
+  fgColor: '#000000',
+  bgColor: '#ffffff',
+  level: 'H',
+  size: 256,
+  includeMargin: true,
+};
+
 export const defaultSiteData = {
   id: generateId(),
   theme: 'minimal',
+  qrStyle: { ...defaultQrStyle },
   globalStyle: {
     fontFamily: 'Inter',
     backgroundColor: '#ffffff',

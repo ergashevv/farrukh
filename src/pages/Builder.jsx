@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin } from 'lucide-react';
-import { defaultSiteData, generateId } from '../core/schema';
+import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink, MapPin, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { defaultSiteData, defaultQrStyle, generateId } from '../core/schema';
 import { extractMapEmbedSrc, isAllowedMapEmbedUrl } from '../core/mapEmbed';
 import { fileToAvatarDataUrl } from '../core/imageUtils';
 import { uploadImageToBlob } from '../core/blobUpload';
 import { templates, applyTemplate } from '../core/templates';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getStoredAuth, clearAuth } from '../auth';
+import { ProfileTextStyleControls } from '../components/ProfileTextStyleControls';
 
 const patterns = [
   { id: 'none', name: 'None', url: '' },
@@ -104,6 +105,13 @@ export const Builder = () => {
     setSiteData({ ...siteData, globalStyle: { ...siteData.globalStyle, [key]: value } });
   };
 
+  const handleQrStyleChange = (key, value) => {
+    setSiteData({
+      ...siteData,
+      qrStyle: { ...(siteData.qrStyle || defaultQrStyle), [key]: value },
+    });
+  };
+
   const handleContentChange = (key, value) => {
     setSiteData({ ...siteData, content: { ...siteData.content, [key]: value } });
   };
@@ -169,7 +177,15 @@ export const Builder = () => {
     const newSection = { id: generateId(), type, data: {} };
     if (type === 'links' || type === 'social') newSection.data.items = [{ id: generateId(), title: 'New Item', url: 'https://', platform: 'twitter' }];
     if (type === 'contact') newSection.data = { email: '', phone: '' };
-    if (type === 'text') newSection.data = { text: 'New text block' };
+    if (type === 'text') {
+      newSection.data = {
+        text: 'New text block',
+        align: 'center',
+        fontSize: 'base',
+        fontWeight: 'normal',
+        color: '',
+      };
+    }
     if (type === 'map') newSection.data = { title: '', mapProvider: 'google', embedUrl: '' };
     
     handleContentChange('sections', [...siteData.content.sections, newSection]);
@@ -405,6 +421,76 @@ export const Builder = () => {
                 </div>
               </div>
             </div>
+
+            <div className="editor-section">
+              <span className="label">QR kod</span>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 0.75rem' }}>
+                Sayt saqlagach chiqadigan QR — rang va o‘lchamni shu yerda sozlang.
+              </p>
+              <div className="flex-col gap-3 mt-2">
+                <div className="flex justify-between items-center gap-3">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Nuqta rangi</span>
+                  <input
+                    type="color"
+                    value={(siteData.qrStyle || defaultQrStyle).fgColor}
+                    onChange={(e) => handleQrStyleChange('fgColor', e.target.value)}
+                    style={{ width: '44px', height: '36px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  />
+                </div>
+                <div className="flex justify-between items-center gap-3">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Fon rangi</span>
+                  <input
+                    type="color"
+                    value={(siteData.qrStyle || defaultQrStyle).bgColor}
+                    onChange={(e) => handleQrStyleChange('bgColor', e.target.value)}
+                    style={{ width: '44px', height: '36px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>Xatolik tuzatish (sifat)</span>
+                  <select
+                    className="input-field"
+                    value={(siteData.qrStyle || defaultQrStyle).level}
+                    onChange={(e) => handleQrStyleChange('level', e.target.value)}
+                  >
+                    <option value="L">Past (L)</option>
+                    <option value="M">O‘rta (M)</option>
+                    <option value="Q">Yuqori (Q)</option>
+                    <option value="H">Maksimal (H)</option>
+                  </select>
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>Rasm o‘lchami (px)</span>
+                  <select
+                    className="input-field"
+                    value={String((siteData.qrStyle || defaultQrStyle).size)}
+                    onChange={(e) => handleQrStyleChange('size', Number(e.target.value))}
+                  >
+                    <option value="180">180</option>
+                    <option value="200">200</option>
+                    <option value="256">256</option>
+                    <option value="320">320</option>
+                    <option value="400">400</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-2" style={{ cursor: 'pointer', fontSize: '0.875rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={(siteData.qrStyle || defaultQrStyle).includeMargin !== false}
+                    onChange={(e) => handleQrStyleChange('includeMargin', e.target.checked)}
+                  />
+                  Chekka bo‘shliq (margin)
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-secondary w-full"
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => setSiteData({ ...siteData, qrStyle: { ...defaultQrStyle } })}
+                >
+                  QR ni standartga qaytarish
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -468,9 +554,54 @@ export const Builder = () => {
                     </button>
                   </div>
                 </div>
-                <input type="text" placeholder="Title / Name" className="input-field" value={siteData.content.title} onChange={(e) => handleContentChange('title', e.target.value)} />
-                <input type="text" placeholder="Subtitle" className="input-field" value={siteData.content.subtitle} onChange={(e) => handleContentChange('subtitle', e.target.value)} />
-                <textarea placeholder="Description" className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} value={siteData.content.description} onChange={(e) => handleContentChange('description', e.target.value)} />
+                <div className="flex-col gap-1">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Ism / sarlavha</span>
+                  <ProfileTextStyleControls
+                    fieldKey="title"
+                    style={siteData.content.titleStyle}
+                    globalTextColor={siteData.globalStyle.textColor}
+                    onPatch={(patch) => handleContentChange('titleStyle', { ...(siteData.content.titleStyle || {}), ...patch })}
+                  />
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Masalan: Jane Doe"
+                    value={siteData.content.title}
+                    onChange={(e) => handleContentChange('title', e.target.value)}
+                  />
+                </div>
+                <div className="flex-col gap-1">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Sarlavha osti</span>
+                  <ProfileTextStyleControls
+                    fieldKey="subtitle"
+                    style={siteData.content.subtitleStyle}
+                    globalTextColor={siteData.globalStyle.textColor}
+                    onPatch={(patch) => handleContentChange('subtitleStyle', { ...(siteData.content.subtitleStyle || {}), ...patch })}
+                  />
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Lavozim yoki tagline"
+                    value={siteData.content.subtitle}
+                    onChange={(e) => handleContentChange('subtitle', e.target.value)}
+                  />
+                </div>
+                <div className="flex-col gap-1">
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tavsif</span>
+                  <ProfileTextStyleControls
+                    fieldKey="description"
+                    style={siteData.content.descriptionStyle}
+                    globalTextColor={siteData.globalStyle.textColor}
+                    onPatch={(patch) => handleContentChange('descriptionStyle', { ...(siteData.content.descriptionStyle || {}), ...patch })}
+                  />
+                  <textarea
+                    className="input-field"
+                    style={{ minHeight: '80px', resize: 'vertical' }}
+                    placeholder="Qisqa tavsif..."
+                    value={siteData.content.description}
+                    onChange={(e) => handleContentChange('description', e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -598,7 +729,81 @@ export const Builder = () => {
                     )}
 
                     {section.type === 'text' && (
-                      <textarea className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} value={section.data.text} onChange={(e) => updateSectionData(section.id, { text: e.target.value })} placeholder="Write something..." />
+                      <div className="flex-col gap-3">
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Matn uslubi</span>
+                          <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Joysizlash</span>
+                            <div className="flex gap-1">
+                              {[
+                                { id: 'left', Icon: AlignLeft },
+                                { id: 'center', Icon: AlignCenter },
+                                { id: 'right', Icon: AlignRight },
+                              ].map(({ id, Icon }) => (
+                                <button
+                                  key={id}
+                                  type="button"
+                                  className={`btn ${(section.data.align || 'center') === id ? 'btn-primary' : 'btn-secondary'}`}
+                                  style={{ padding: '0.35rem 0.5rem' }}
+                                  onClick={() => updateSectionData(section.id, { ...section.data, align: id })}
+                                  aria-label={id}
+                                >
+                                  <Icon size={16} />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2" style={{ gap: '0.5rem' }}>
+                            <select
+                              className="input-field"
+                              style={{ flex: '1 1 120px', minWidth: '100px' }}
+                              value={section.data.fontSize || 'base'}
+                              onChange={(e) => updateSectionData(section.id, { ...section.data, fontSize: e.target.value })}
+                            >
+                              <option value="sm">Kichik</option>
+                              <option value="base">Oddiy</option>
+                              <option value="lg">Katta</option>
+                              <option value="xl">Yirik</option>
+                              <option value="2xl">Juda yirik</option>
+                            </select>
+                            <select
+                              className="input-field"
+                              style={{ flex: '1 1 120px', minWidth: '100px' }}
+                              value={section.data.fontWeight || 'normal'}
+                              onChange={(e) => updateSectionData(section.id, { ...section.data, fontWeight: e.target.value })}
+                            >
+                              <option value="normal">Oddiy</option>
+                              <option value="medium">O‘rtacha</option>
+                              <option value="semibold">Yarim qalin</option>
+                              <option value="bold">Qalin</option>
+                            </select>
+                            <div className="flex items-center gap-2" style={{ flex: '1 1 140px' }}>
+                              <input
+                                type="color"
+                                value={(section.data.color && section.data.color.trim()) ? section.data.color : siteData.globalStyle.textColor}
+                                onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
+                                title="Matn rangi"
+                                style={{ width: '40px', height: '36px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                style={{ fontSize: '0.7rem', padding: '0.35rem 0.5rem' }}
+                                onClick={() => updateSectionData(section.id, { ...section.data, color: '' })}
+                              >
+                                Tema rangi
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <textarea
+                          className="input-field"
+                          style={{ minHeight: '100px', resize: 'vertical' }}
+                          value={section.data.text}
+                          onChange={(e) => updateSectionData(section.id, { ...section.data, text: e.target.value })}
+                          placeholder="Matnni yozing..."
+                        />
+                      </div>
                     )}
 
                     {section.type === 'contact' && (
@@ -718,8 +923,24 @@ export const Builder = () => {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                 <div style={{ background: '#dcfce7', color: '#166534', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><Check size={20} /><span>Sayt saqlandi!</span></div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                    <QRCodeCanvas id="qr-canvas" value={publishModal.publishedUrl} size={200} level="H" includeMargin={true} />
+                  <div
+                    style={{
+                      background: (siteData.qrStyle || defaultQrStyle).bgColor,
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: 'var(--shadow-sm)',
+                    }}
+                  >
+                    <QRCodeCanvas
+                      id="qr-canvas"
+                      value={publishModal.publishedUrl}
+                      size={(siteData.qrStyle || defaultQrStyle).size}
+                      level={(siteData.qrStyle || defaultQrStyle).level}
+                      bgColor={(siteData.qrStyle || defaultQrStyle).bgColor}
+                      fgColor={(siteData.qrStyle || defaultQrStyle).fgColor}
+                      includeMargin={(siteData.qrStyle || defaultQrStyle).includeMargin !== false}
+                    />
                   </div>
                   <button className="btn btn-secondary" onClick={downloadQRCode} style={{ fontSize: '0.875rem' }}>Download QR Image</button>
                 </div>

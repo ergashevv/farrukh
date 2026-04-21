@@ -2,6 +2,7 @@ import React from 'react';
 import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { isAllowedMapEmbedUrl } from '../../core/mapEmbed';
+import { getTextSectionRenderStyle, getProfileFieldStyle } from '../../core/textSectionStyle';
 
 const TwitterIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -157,7 +158,14 @@ export const Renderer = ({ data, onReorder }) => {
         );
       case 'text':
         return (
-           <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center', lineHeight: 1.6, opacity: 0.9 }}>
+           <div
+             key={section.id}
+             style={{
+               width: '100%',
+               marginBottom: '1.5rem',
+               ...getTextSectionRenderStyle(section.data, globalStyle),
+             }}
+           >
               {section.data.text}
            </div>
         );
@@ -251,9 +259,39 @@ export const Renderer = ({ data, onReorder }) => {
           />
         )}
         
-        {content.title && <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', textAlign: 'center' }}>{content.title}</h1>}
-        {content.subtitle && <h2 style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.9, marginBottom: '1rem', textAlign: 'center' }}>{content.subtitle}</h2>}
-        {content.description && <p style={{ fontSize: '0.875rem', opacity: 0.8, textAlign: 'center', marginBottom: '2rem', lineHeight: 1.5 }}>{content.description}</p>}
+        {content.title && (
+          <h1
+            style={{
+              ...getProfileFieldStyle(content.titleStyle, 'title', globalStyle),
+              marginBottom: '0.25rem',
+              width: '100%',
+            }}
+          >
+            {content.title}
+          </h1>
+        )}
+        {content.subtitle && (
+          <h2
+            style={{
+              ...getProfileFieldStyle(content.subtitleStyle, 'subtitle', globalStyle),
+              marginBottom: '1rem',
+              width: '100%',
+            }}
+          >
+            {content.subtitle}
+          </h2>
+        )}
+        {content.description && (
+          <p
+            style={{
+              ...getProfileFieldStyle(content.descriptionStyle, 'description', globalStyle),
+              marginBottom: '2rem',
+              width: '100%',
+            }}
+          >
+            {content.description}
+          </p>
+        )}
 
         {onReorder ? (
           <DragDropContext onDragEnd={(res) => { if(res.destination) onReorder(res.source.index, res.destination.index); }}>
