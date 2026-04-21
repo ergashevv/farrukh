@@ -240,20 +240,29 @@ export const Builder = () => {
       {/* Sidebar Editor */}
       <div className="editor-sidebar">
         <div className="editor-header">
-          <div className="flex items-center gap-2">
-            <QrCode className="text-primary-color" size={24} />
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Mini Site Builder</h2>
+          <div className="editor-header__brand">
+            <QrCode className="text-primary-color" size={22} style={{ flexShrink: 0 }} />
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Mini Site Builder</h2>
           </div>
-          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
-            <Link to="/" className="btn btn-secondary" style={{ fontSize: '0.8rem', textDecoration: 'none' }}>
+          <div className="editor-header__actions">
+            <Link to="/" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
               Saytlarim
             </Link>
             {getStoredAuth()?.token && (
-              <button type="button" className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => { clearAuth(); navigate('/login'); }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  clearAuth();
+                  navigate('/login');
+                }}
+              >
                 Chiqish
               </button>
             )}
-            <button className="btn btn-primary" onClick={handlePublish}>Saqlash</button>
+            <button type="button" className="btn btn-primary" onClick={handlePublish}>
+              Saqlash
+            </button>
           </div>
         </div>
 
