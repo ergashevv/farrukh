@@ -7,15 +7,28 @@ export const LivePage = () => {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    // In a real app, this would fetch from a database by slug
-    const published = localStorage.getItem(`published_${slug}`);
-    if (published) {
-      try {
-        setData(JSON.parse(published));
-      } catch (e) {
-        console.error(e);
+    const fetchData = async () => {
+      // 1. Try local storage first (for instant load of own sites)
+      const locallyPublished = localStorage.getItem(`published_${slug}`);
+      if (locallyPublished) {
+        try {
+          setData(JSON.parse(locallyPublished));
+        } catch (e) { console.error(e); }
       }
-    }
+
+      // 2. Fetch from database (required for other devices like phone)
+      try {
+        const response = await fetch(`/api/get-site?slug=${slug}`);
+        if (response.ok) {
+          const remoteData = await response.json();
+          setData(remoteData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch from DB:', error);
+      }
+    };
+
+    fetchData();
   }, [slug]);
 
   if (!data) {

@@ -133,10 +133,28 @@ export const Builder = () => {
     setPublishModal({ open: true, slug: defaultSlug, copied: false });
   };
 
-  const confirmPublish = () => {
-    const liveUrl = `https://edevzi.xyz/${publishModal.slug}`;
-    localStorage.setItem(`published_${publishModal.slug}`, JSON.stringify(siteData));
-    setPublishModal({ ...publishModal, publishedUrl: liveUrl });
+  const confirmPublish = async () => {
+    setPublishModal(prev => ({ ...prev, isPublishing: true }));
+    try {
+      const response = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: publishModal.slug,
+          data: siteData
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to publish');
+
+      const liveUrl = `${window.location.origin}/${publishModal.slug}`;
+      localStorage.setItem(`published_${publishModal.slug}`, JSON.stringify(siteData)); // Keep local as cache
+      setPublishModal({ ...publishModal, publishedUrl: liveUrl, isPublishing: false });
+    } catch (error) {
+      console.error('Publish error:', error);
+      alert('Failed to publish site. Please try again.');
+      setPublishModal(prev => ({ ...prev, isPublishing: false }));
+    }
   };
 
   return (
@@ -452,7 +470,15 @@ export const Builder = () => {
                     <input type="text" className="input-field" value={publishModal.slug} onChange={(e) => setPublishModal({ ...publishModal, slug: e.target.value })} />
                   </div>
                 </div>
-                <button className="btn btn-primary w-full" style={{ padding: '0.75rem', fontSize: '1rem' }} onClick={confirmPublish}>Confirm & Deploy</button>
+                                <button 
+                  className="btn btn-primary w-full" 
+                  style={{ padding: '0.75rem', fontSize: '1rem', opacity: publishModal.isPublishing ? 0.7 : 1 }} 
+                  onClick={confirmPublish}
+                  disabled={publishModal.isPublishing}
+                >
+                  {publishModal.isPublishing ? 'Publishing...' : 'Confirm & Deploy'}
+                </button>
+
               </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
