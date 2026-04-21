@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { Smartphone, Monitor, Code, Settings, Link2, Share, Check, X, QrCode, GripVertical, Plus, Trash2, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react';
 import { defaultSiteData, generateId } from '../core/schema';
 import { templates, applyTemplate } from '../core/templates';
@@ -129,7 +129,10 @@ export const Builder = () => {
 
   // Publish
   const handlePublish = () => {
-    const defaultSlug = siteData.content.title.toLowerCase().replace(/[^a-z0-9]/g, '-') || generateId();
+    // Generate a unique random slug: title-random6chars
+    const baseSlug = siteData.content.title.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 15) || 'site';
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const defaultSlug = `${baseSlug}-${randomSuffix}`;
     setPublishModal({ open: true, slug: defaultSlug, copied: false });
   };
 
@@ -155,6 +158,18 @@ export const Builder = () => {
       alert('Failed to publish site. Please try again.');
       setPublishModal(prev => ({ ...prev, isPublishing: false }));
     }
+  };
+
+  const downloadQRCode = () => {
+    const canvas = document.getElementById('qr-canvas');
+    if (!canvas) return;
+    const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    let downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `qr-${publishModal.slug}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   return (
@@ -483,7 +498,12 @@ export const Builder = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
                 <div style={{ background: '#dcfce7', color: '#166534', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}><Check size={20} /><span>Site Published Successfully!</span></div>
-                <div style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}><QRCodeSVG value={publishModal.publishedUrl} size={180} level="H" includeMargin={true} /></div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                    <QRCodeCanvas id="qr-canvas" value={publishModal.publishedUrl} size={200} level="H" includeMargin={true} />
+                  </div>
+                  <button className="btn btn-secondary" onClick={downloadQRCode} style={{ fontSize: '0.875rem' }}>Download QR Image</button>
+                </div>
                 <div className="w-full flex items-center justify-between p-2" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)' }}>
                   <span style={{ fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px', color: 'var(--text-secondary)' }}>{publishModal.publishedUrl}</span>
                   <button className="btn btn-primary" style={{ padding: '0.25rem 0.75rem' }} onClick={() => { navigator.clipboard.writeText(publishModal.publishedUrl); setPublishModal({ ...publishModal, copied: true }); }}>

@@ -215,9 +215,6 @@ export const Renderer = ({ data, onReorder }) => {
           </div>
         )}
         
-        <div style={{ marginTop: '3rem', opacity: 0.5, fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em' }}>
-          POWERED BY QR PUBLISHER
-        </div>
       </div>
     </div>
   );
