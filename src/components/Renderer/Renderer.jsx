@@ -47,14 +47,15 @@ export const Renderer = ({ data, onReorder }) => {
   const { globalStyle, content } = data;
 
   const isPattern = globalStyle.backgroundImage?.includes('data:image/svg');
+  // fixed attachment breaks tiled/cover backgrounds on mobile Safari (pattern stops mid-scroll)
   const bgStyle = globalStyle.backgroundImage
     ? {
         backgroundColor: globalStyle.backgroundColor,
         backgroundImage: globalStyle.backgroundImage,
         backgroundSize: isPattern ? 'auto' : 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        backgroundRepeat: isPattern ? 'repeat' : 'no-repeat'
+        backgroundPosition: 'center top',
+        backgroundRepeat: isPattern ? 'repeat' : 'no-repeat',
+        backgroundAttachment: 'scroll',
       }
     : globalStyle.backgroundGradient
       ? { background: globalStyle.backgroundGradient }
@@ -62,7 +63,7 @@ export const Renderer = ({ data, onReorder }) => {
 
   const containerStyle = {
     ...bgStyle,
-    minHeight: '100%',
+    minHeight: '100vh',
     width: '100%',
     fontFamily: globalStyle.fontFamily === 'Outfit' ? '"Outfit", sans-serif' : '"Inter", sans-serif',
     color: globalStyle.textColor,
