@@ -7,8 +7,8 @@ export const defaultSiteData = {
     fontFamily: 'Inter',
     backgroundColor: '#ffffff',
     textColor: '#18181b',
-    primaryColor: '#0ea5e9',
-    borderRadius: '16px',
+    primaryColor: '#000000',
+    borderRadius: '8px',
     buttonStyle: 'filled',
     backgroundGradient: ''
   },
