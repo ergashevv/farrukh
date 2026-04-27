@@ -191,7 +191,11 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
           <div key={section.id} style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
             {section.data.items?.map(link => (
               <a 
-                key={link.id} href={link.url} target="_blank" rel="noreferrer" style={getBtnStyle()}
+                key={link.id} href={link.url} target="_blank" rel="noreferrer" 
+                style={{
+                  ...getBtnStyle(),
+                  color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                }}
                 onClick={() => fireTrack(`link:${section.id}:${link.id}`)}
                 onMouseOver={(e) => {
                   if(globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = globalStyle.primaryColor; e.currentTarget.style.color = '#fff'; }
@@ -199,7 +203,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                   else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'; }
                 }}
                 onMouseOut={(e) => {
-                  if(globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = globalStyle.textColor; }
+                  if(globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = section.data.color || globalStyle.textColor; }
                   else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '1'; }
                   else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }
                 }}
@@ -213,13 +217,40 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
              {section.data.email && (
-               <a href={`mailto:${section.data.email}`} style={{...getBtnStyle(), flex: 1, margin: 0 }} onClick={() => fireTrack(`contact:${section.id}:email`)}>
-                 <Mail size={18} style={{ marginRight: '0.5rem' }} /> Email
+               <a href={`mailto:${section.data.email}`} 
+                  style={{
+                    ...getBtnStyle(), 
+                    flex: 1, 
+                    margin: 0, 
+                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                  }} 
+                  onClick={() => fireTrack(`contact:${section.id}:email`)}>
+                 <Mail size={18} style={{ marginRight: '0.5rem' }} /> {section.data.emailLabel || 'Email'}
                </a>
              )}
              {section.data.phone && (
-               <a href={`tel:${section.data.phone}`} style={{...getBtnStyle(), flex: 1, margin: 0 }} onClick={() => fireTrack(`contact:${section.id}:phone`)}>
-                 <Phone size={18} style={{ marginRight: '0.5rem' }} /> Call
+               <a href={`tel:${section.data.phone}`} 
+                  style={{
+                    ...getBtnStyle(), 
+                    flex: 1, 
+                    margin: 0,
+                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                  }} 
+                  onClick={() => fireTrack(`contact:${section.id}:phone`)}>
+                 <Phone size={18} style={{ marginRight: '0.5rem' }} /> {section.data.phoneLabel || 'Call'}
+               </a>
+             )}
+             {section.data.website && (
+               <a href={section.data.website.startsWith('http') ? section.data.website : `https://${section.data.website}`} 
+                  target="_blank" rel="noreferrer"
+                  style={{
+                    ...getBtnStyle(), 
+                    width: '100%', 
+                    margin: '0.5rem 0 0 0',
+                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                  }} 
+                  onClick={() => fireTrack(`contact:${section.id}:website`)}>
+                 <ExternalLink size={18} style={{ marginRight: '0.5rem' }} /> {section.data.websiteLabel || 'Website'}
                </a>
              )}
           </div>
@@ -470,7 +501,10 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                   href={href}
                   target="_blank"
                   rel="noreferrer"
-                  style={getBtnStyle()}
+                  style={{
+                    ...getBtnStyle(),
+                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                  }}
                   onClick={() => fireTrack(`quick:${section.id}:${item.id}`)}
                   onMouseOver={(e) => {
                     if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = globalStyle.primaryColor; e.currentTarget.style.color = '#fff'; }
@@ -478,7 +512,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                     else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)'; }
                   }}
                   onMouseOut={(e) => {
-                    if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = globalStyle.textColor; }
+                    if (globalStyle.buttonStyle === 'outline') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = section.data.color || globalStyle.textColor; }
                     else if (globalStyle.buttonStyle === 'filled') { e.currentTarget.style.opacity = '1'; }
                     else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }
                   }}

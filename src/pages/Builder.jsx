@@ -1105,7 +1105,27 @@ export const Builder = () => {
                     )}
 
                     {section.type === 'links' && (
-                       <button className="btn btn-secondary w-full mt-2" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...section.data.items, { id: generateId(), title: 'New Link', url: '' }] })}>+ Add Link</button>
+                       <>
+                        <button className="btn btn-secondary w-full mt-2" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...section.data.items, { id: generateId(), title: 'New Link', url: '' }] })}>+ Add Link</button>
+                        <div className="flex items-center gap-2 mt-3">
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
+                          <input
+                            type="color"
+                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
+                            title="Tugma matni rangi"
+                            style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.7rem', padding: '0.3rem 0.5rem' }}
+                            onClick={() => updateSectionData(section.id, { ...section.data, color: '' })}
+                          >
+                            Tema rangi
+                          </button>
+                        </div>
+                       </>
                     )}
 
                     {section.type === 'social' && (
@@ -1190,9 +1210,37 @@ export const Builder = () => {
                     )}
 
                     {section.type === 'contact' && (
-                      <div className="flex-col gap-2">
-                        <input type="email" className="input-field" value={section.data.email} onChange={(e) => updateSectionData(section.id, { ...section.data, email: e.target.value })} placeholder="Email address" />
-                        <input type="text" className="input-field" value={section.data.phone} onChange={(e) => updateSectionData(section.id, { ...section.data, phone: e.target.value })} placeholder="Phone number" />
+                      <div className="flex-col gap-3">
+                        <div className="flex gap-2">
+                          <input type="email" className="input-field" style={{ flex: 1 }} value={section.data.email} onChange={(e) => updateSectionData(section.id, { ...section.data, email: e.target.value })} placeholder="Email address" />
+                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.emailLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, emailLabel: e.target.value })} placeholder="Email nomi" />
+                        </div>
+                        <div className="flex gap-2">
+                          <input type="text" className="input-field" style={{ flex: 1 }} value={section.data.phone} onChange={(e) => updateSectionData(section.id, { ...section.data, phone: e.target.value })} placeholder="Phone number" />
+                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.phoneLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, phoneLabel: e.target.value })} placeholder="Call nomi" />
+                        </div>
+                        <div className="flex gap-2">
+                          <input type="text" className="input-field" style={{ flex: 1 }} value={section.data.website || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, website: e.target.value })} placeholder="Website URL (https://...)" />
+                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.websiteLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, websiteLabel: e.target.value })} placeholder="Sayt nomi" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
+                          <input
+                            type="color"
+                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
+                            title="Tugma matni rangi"
+                            style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.7rem', padding: '0.3rem 0.5rem' }}
+                            onClick={() => updateSectionData(section.id, { ...section.data, color: '' })}
+                          >
+                            Tema rangi
+                          </button>
+                        </div>
                       </div>
                     )}
 
@@ -1622,6 +1670,24 @@ export const Builder = () => {
                         <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '' }] })}>
                           + Tugma
                         </button>
+                        <div className="flex items-center gap-2 mt-3">
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
+                          <input
+                            type="color"
+                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
+                            title="Tugma matni rangi"
+                            style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.7rem', padding: '0.3rem 0.5rem' }}
+                            onClick={() => updateSectionData(section.id, { ...section.data, color: '' })}
+                          >
+                            Tema rangi
+                          </button>
+                        </div>
                       </div>
                     )}
 

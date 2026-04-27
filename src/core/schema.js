@@ -68,7 +68,11 @@ export const defaultSiteData = {
         type: 'contact',
         data: {
           email: 'hello@example.com',
-          phone: '+1 234 567 890'
+          emailLabel: 'Email',
+          phone: '+1 234 567 890',
+          phoneLabel: 'Call',
+          website: '',
+          websiteLabel: 'Website'
         }
       }
     ]
