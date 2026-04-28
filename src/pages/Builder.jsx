@@ -252,6 +252,55 @@ export const Builder = () => {
     handleQrStyleChange('logoUrl', blobUrl || dataUrl);
   };
 
+  const MultilingualSectionTitle = ({ section }) => (
+    <div className="flex-col gap-1 mb-2">
+      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Blok sarlavhasi (UZ/RU/EN):</span>
+      <div className="flex gap-1">
+        {['uz', 'ru', 'en'].map(l => (
+          <input
+            key={l}
+            type="text"
+            className="input-field"
+            style={{ fontSize: '0.75rem', padding: '0.35rem' }}
+            placeholder={l.toUpperCase()}
+            value={getVal(section.data.title, l)}
+            onChange={(e) => {
+              const prev = section.data.title;
+              const newVal = typeof prev === 'object' ? { ...prev, [l]: e.target.value } : { uz: prev, ru: prev, en: prev, [l]: e.target.value };
+              updateSectionData(section.id, { ...section.data, title: newVal });
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  const LocalLangTabs = () => (
+    <div className="flex gap-1 mb-1">
+      {['uz', 'ru', 'en'].map(l => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => setActiveLang(l)}
+          className={`lang-tag ${activeLang === l ? 'lang-tag-active' : ''}`}
+          style={{ 
+            fontSize: '0.62rem', 
+            padding: '2px 8px', 
+            minWidth: '32px',
+            opacity: activeLang === l ? 1 : 0.6,
+            cursor: 'pointer',
+            border: 'none',
+            borderRadius: '4px',
+            backgroundColor: activeLang === l ? 'var(--primary-color)' : 'var(--bg-tertiary)',
+            color: activeLang === l ? '#fff' : 'var(--text-secondary)'
+          }}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+
   const exportSiteJson = () => {
     const blob = new Blob([JSON.stringify(siteData, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -345,13 +394,13 @@ export const Builder = () => {
     if (type === 'faq') {
       newSection.data = {
         title: { uz: 'Savol-javoblar', ru: 'Вопросы и ответы', en: 'FAQ' },
-        items: [{ id: generateId(), question: 'Savol?', answer: 'Javob.' }],
+        items: [{ id: generateId(), question: { uz: 'Savol?', ru: 'Вопрос?', en: 'Question?' }, answer: { uz: 'Javob.', ru: 'Ответ.', en: 'Answer.' } }],
       };
     }
     if (type === 'gallery') {
       newSection.data = {
         title: { uz: 'Galereya', ru: 'Галерея', en: 'Gallery' },
-        items: [{ id: generateId(), url: 'https://picsum.photos/seed/qr/400/300', caption: '' }],
+        items: [{ id: generateId(), url: 'https://picsum.photos/seed/qr/400/300', caption: { uz: '', ru: '', en: '' } }],
       };
     }
     if (type === 'video') {
@@ -361,8 +410,8 @@ export const Builder = () => {
       newSection.data = {
         title: { uz: 'Ish vaqti', ru: 'Рабочее время', en: 'Working Hours' },
         lines: [
-          { id: generateId(), label: 'Dush–Juma', value: '9:00 – 18:00' },
-          { id: generateId(), label: 'Shanba', value: '10:00 – 14:00' },
+          { id: generateId(), label: { uz: 'Dush–Juma', ru: 'Пон–Пят', en: 'Mon–Fri' }, value: '9:00 – 18:00' },
+          { id: generateId(), label: { uz: 'Shanba', ru: 'Суббота', en: 'Saturday' }, value: '10:00 – 14:00' },
         ],
       };
     }
@@ -383,8 +432,8 @@ export const Builder = () => {
       newSection.data = {
         title: { uz: 'Bog‘lanish', ru: 'Связаться', en: 'Contact' },
         items: [
-          { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '' },
-          { id: generateId(), type: 'telegram', label: 'Telegram', value: '' },
+          { id: generateId(), type: 'whatsapp', label: { uz: 'WhatsApp', ru: 'WhatsApp', en: 'WhatsApp' }, value: '' },
+          { id: generateId(), type: 'telegram', label: { uz: 'Telegram', ru: 'Telegram', en: 'Telegram' }, value: '' },
         ],
       };
     }
@@ -611,32 +660,22 @@ export const Builder = () => {
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Mini Site Builder</h2>
           </div>
           <div className="editor-header__actions">
-            {/* Language Switcher */}
-            <div className="flex gap-1 mr-2" style={{ background: 'var(--bg-tertiary)', padding: '4px', borderRadius: 'var(--radius-sm)' }}>
-              {['uz', 'ru', 'en'].map(l => (
-                <button
-                  key={l}
-                  onClick={() => setActiveLang(l)}
-                  style={{
-                    padding: '4px 8px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    backgroundColor: activeLang === l ? 'var(--primary-color)' : 'transparent',
-                    color: activeLang === l ? '#fff' : 'var(--text-secondary)'
-                  }}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-            
             <Link to="/" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
               Saytlarim
             </Link>
+            {getStoredAuth()?.token && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  clearAuth();
+                  navigate('/login');
+                }}
+              >
+                Chiqish
+              </button>
+            )}
+          </div>
             {getStoredAuth()?.token && (
               <button
                 type="button"
@@ -953,6 +992,30 @@ export const Builder = () => {
 
         {activeTab === 'content' && (
           <div>
+            <div className="editor-section" style={{ position: 'sticky', top: '0', zIndex: 10, background: 'var(--bg-primary-soft)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', borderBottom: '2px solid var(--primary-color)', margin: '0 -1rem 1rem -1rem', padding: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+              <div className="flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Ma'lumot to'ldirish tili:</span>
+                  <div className="flex gap-1 p-1" style={{ background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                    {['uz', 'ru', 'en'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => setActiveLang(l)}
+                        className={`lang-tag ${activeLang === l ? 'lang-tag-active' : ''}`}
+                        style={{ padding: '8px 16px', border: 'none', transition: 'all 0.2s', fontSize: '0.75rem' }}
+                      >
+                        {l.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0 }}>
+                  <Info size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                  Pastdagi maydonlar tanlangan tilda (<b>{activeLang.toUpperCase()}</b>) to'ldiriladi. Boshqa tildagi matnni yozish uchun tilni almashtiring.
+                </p>
+              </div>
+            </div>
+
             <div className="editor-section">
               <span className="label">Profile Information</span>
               <div className="flex-col gap-3 mt-4">
@@ -1019,13 +1082,32 @@ export const Builder = () => {
                     globalTextColor={siteData.globalStyle.textColor}
                     onPatch={(patch) => handleContentChange('titleStyle', { ...(siteData.content.titleStyle || {}), ...patch })}
                   />
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Masalan: Jane Doe"
-                    value={getVal(siteData.content.title)}
-                    onChange={(e) => handleContentChange('title', e.target.value)}
-                  />
+                  <div className="flex-col gap-2">
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">UZ</span>
+                      <input type="text" className="input-field" placeholder="Ism (UZ)" value={getVal(siteData.content.title, 'uz')} onChange={(e) => {
+                        const prev = siteData.content.title;
+                        const newVal = typeof prev === 'object' ? { ...prev, uz: e.target.value } : { uz: e.target.value, ru: prev, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, title: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">RU</span>
+                      <input type="text" className="input-field" placeholder="Имя (RU)" value={getVal(siteData.content.title, 'ru')} onChange={(e) => {
+                        const prev = siteData.content.title;
+                        const newVal = typeof prev === 'object' ? { ...prev, ru: e.target.value } : { uz: prev, ru: e.target.value, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, title: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">EN</span>
+                      <input type="text" className="input-field" placeholder="Name (EN)" value={getVal(siteData.content.title, 'en')} onChange={(e) => {
+                        const prev = siteData.content.title;
+                        const newVal = typeof prev === 'object' ? { ...prev, en: e.target.value } : { uz: prev, ru: prev, en: e.target.value };
+                        setSiteData({ ...siteData, content: { ...siteData.content, title: newVal } });
+                      }} />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex-col gap-1">
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Sarlavha osti</span>
@@ -1035,13 +1117,32 @@ export const Builder = () => {
                     globalTextColor={siteData.globalStyle.textColor}
                     onPatch={(patch) => handleContentChange('subtitleStyle', { ...(siteData.content.subtitleStyle || {}), ...patch })}
                   />
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Lavozim yoki tagline"
-                    value={getVal(siteData.content.subtitle)}
-                    onChange={(e) => handleContentChange('subtitle', e.target.value)}
-                  />
+                  <div className="flex-col gap-2">
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">UZ</span>
+                      <input type="text" className="input-field" placeholder="Tagline (UZ)" value={getVal(siteData.content.subtitle, 'uz')} onChange={(e) => {
+                        const prev = siteData.content.subtitle;
+                        const newVal = typeof prev === 'object' ? { ...prev, uz: e.target.value } : { uz: e.target.value, ru: prev, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, subtitle: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">RU</span>
+                      <input type="text" className="input-field" placeholder="Подзаголовок (RU)" value={getVal(siteData.content.subtitle, 'ru')} onChange={(e) => {
+                        const prev = siteData.content.subtitle;
+                        const newVal = typeof prev === 'object' ? { ...prev, ru: e.target.value } : { uz: prev, ru: e.target.value, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, subtitle: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <span className="lang-tag">EN</span>
+                      <input type="text" className="input-field" placeholder="Subtitle (EN)" value={getVal(siteData.content.subtitle, 'en')} onChange={(e) => {
+                        const prev = siteData.content.subtitle;
+                        const newVal = typeof prev === 'object' ? { ...prev, en: e.target.value } : { uz: prev, ru: prev, en: e.target.value };
+                        setSiteData({ ...siteData, content: { ...siteData.content, subtitle: newVal } });
+                      }} />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex-col gap-1">
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tavsif</span>
@@ -1051,13 +1152,32 @@ export const Builder = () => {
                     globalTextColor={siteData.globalStyle.textColor}
                     onPatch={(patch) => handleContentChange('descriptionStyle', { ...(siteData.content.descriptionStyle || {}), ...patch })}
                   />
-                  <textarea
-                    className="input-field"
-                    style={{ minHeight: '80px', resize: 'vertical' }}
-                    placeholder="Qisqa tavsif..."
-                    value={getVal(siteData.content.description)}
-                    onChange={(e) => handleContentChange('description', e.target.value)}
-                  />
+                  <div className="flex-col gap-2">
+                    <div className="flex-col gap-1">
+                      <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>O'zbekcha (UZ)</span>
+                      <textarea className="input-field" style={{ minHeight: '60px' }} value={getVal(siteData.content.description, 'uz')} onChange={(e) => {
+                        const prev = siteData.content.description;
+                        const newVal = typeof prev === 'object' ? { ...prev, uz: e.target.value } : { uz: e.target.value, ru: prev, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, description: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex-col gap-1">
+                      <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>Русский (RU)</span>
+                      <textarea className="input-field" style={{ minHeight: '60px' }} value={getVal(siteData.content.description, 'ru')} onChange={(e) => {
+                        const prev = siteData.content.description;
+                        const newVal = typeof prev === 'object' ? { ...prev, ru: e.target.value } : { uz: prev, ru: e.target.value, en: prev };
+                        setSiteData({ ...siteData, content: { ...siteData.content, description: newVal } });
+                      }} />
+                    </div>
+                    <div className="flex-col gap-1">
+                      <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>English (EN)</span>
+                      <textarea className="input-field" style={{ minHeight: '60px' }} value={getVal(siteData.content.description, 'en')} onChange={(e) => {
+                        const prev = siteData.content.description;
+                        const newVal = typeof prev === 'object' ? { ...prev, en: e.target.value } : { uz: prev, ru: prev, en: e.target.value };
+                        setSiteData({ ...siteData, content: { ...siteData.content, description: newVal } });
+                      }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1134,12 +1254,15 @@ export const Builder = () => {
                                           <GripVertical size={16} color="var(--text-muted)" />
                                         </div>
                                         <div className="flex-col gap-2" style={{ flex: 1, minWidth: 0 }}>
-                                          <input type="text" className="input-field" value={getVal(item.title)} onChange={(e) => {
-                                            const newItems = [...section.data.items]; 
-                                            const prev = newItems[i].title;
-                                            newItems[i].title = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
-                                            updateSectionData(section.id, { items: newItems });
-                                          }} placeholder="Link Title" />
+                                          <div className="flex-col w-full">
+                                            <LocalLangTabs />
+                                            <input type="text" className="input-field" value={getVal(item.title)} onChange={(e) => {
+                                              const newItems = [...section.data.items]; 
+                                              const prev = newItems[i].title;
+                                              newItems[i].title = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                                              updateSectionData(section.id, { items: newItems });
+                                            }} placeholder="Link Title" />
+                                          </div>
                                           <input type="text" className="input-field" value={item.url} onChange={(e) => {
                                             const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
                                           }} placeholder="URL" />
@@ -1200,18 +1323,21 @@ export const Builder = () => {
                                         </div>
                                         <div className="flex-col gap-1 pl-6">
                                           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tugma matni ({activeLang}):</span>
-                                          <input 
-                                            type="text" 
-                                            className="input-field"
-                                            value={getVal(item.label)}
-                                            onChange={(e) => {
-                                              const newItems = [...section.data.items];
-                                              const prev = newItems[i].label;
-                                              newItems[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
-                                              updateSectionData(section.id, { ...section.data, items: newItems });
-                                            }}
-                                            placeholder="Tugma nomi"
-                                          />
+                                          <div className="flex-col w-full">
+                                            <LocalLangTabs />
+                                            <input 
+                                              type="text" 
+                                              className="input-field"
+                                              value={getVal(item.label)}
+                                              onChange={(e) => {
+                                                const newItems = [...section.data.items];
+                                                const prev = newItems[i].label;
+                                                newItems[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                                                updateSectionData(section.id, { ...section.data, items: newItems });
+                                              }}
+                                              placeholder="Tugma nomi"
+                                            />
+                                          </div>
                                         </div>
                                       </div>
                                     ) : (
@@ -1352,13 +1478,50 @@ export const Builder = () => {
                             </div>
                           </div>
                         </div>
-                        <textarea
-                          className="input-field"
-                          style={{ minHeight: '100px', resize: 'vertical' }}
-                          value={section.data.text}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, text: e.target.value })}
-                          placeholder="Matnni yozing..."
-                        />
+                        <div className="flex-col gap-2">
+                          <div className="flex-col gap-1">
+                            <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>O'zbekcha (UZ)</span>
+                            <textarea
+                              className="input-field"
+                              style={{ minHeight: '80px', resize: 'vertical' }}
+                              value={getVal(section.data.text, 'uz')}
+                              onChange={(e) => {
+                                const prev = section.data.text;
+                                const newVal = typeof prev === 'object' ? { ...prev, uz: e.target.value } : { uz: e.target.value, ru: prev, en: prev };
+                                updateSectionData(section.id, { ...section.data, text: newVal });
+                              }}
+                              placeholder="Matn (UZ)..."
+                            />
+                          </div>
+                          <div className="flex-col gap-1">
+                            <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>Русский (RU)</span>
+                            <textarea
+                              className="input-field"
+                              style={{ minHeight: '80px', resize: 'vertical' }}
+                              value={getVal(section.data.text, 'ru')}
+                              onChange={(e) => {
+                                const prev = section.data.text;
+                                const newVal = typeof prev === 'object' ? { ...prev, ru: e.target.value } : { uz: prev, ru: e.target.value, en: prev };
+                                updateSectionData(section.id, { ...section.data, text: newVal });
+                              }}
+                              placeholder="Текст (RU)..."
+                            />
+                          </div>
+                          <div className="flex-col gap-1">
+                            <span className="lang-tag w-fit px-2" style={{ fontSize: '0.65rem' }}>English (EN)</span>
+                            <textarea
+                              className="input-field"
+                              style={{ minHeight: '80px', resize: 'vertical' }}
+                              value={getVal(section.data.text, 'en')}
+                              onChange={(e) => {
+                                const prev = section.data.text;
+                                const newVal = typeof prev === 'object' ? { ...prev, en: e.target.value } : { uz: prev, ru: prev, en: e.target.value };
+                                updateSectionData(section.id, { ...section.data, text: newVal });
+                              }}
+                              placeholder="Text (EN)..."
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -1385,37 +1548,39 @@ export const Builder = () => {
 
                     {section.type === 'faq' && (
                       <div className="flex-col gap-2">
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={section.data.title || ''}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Blok sarlavhasi"
-                        />
+                        <MultilingualSectionTitle section={section} />
                         {section.data.items?.map((item, i) => (
                           <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-                            <input
-                              type="text"
-                              className="input-field"
-                              value={item.question}
-                              onChange={(e) => {
-                                const items = [...section.data.items];
-                                items[i] = { ...items[i], question: e.target.value };
-                                updateSectionData(section.id, { ...section.data, items });
-                              }}
-                              placeholder="Savol"
-                            />
-                            <textarea
-                              className="input-field"
-                              style={{ minHeight: '72px' }}
-                              value={item.answer}
-                              onChange={(e) => {
-                                const items = [...section.data.items];
-                                items[i] = { ...items[i], answer: e.target.value };
-                                updateSectionData(section.id, { ...section.data, items });
-                              }}
-                              placeholder="Javob"
-                            />
+                            <div className="flex-col w-full">
+                              <LocalLangTabs />
+                              <input
+                                type="text"
+                                className="input-field"
+                                value={getVal(item.question)}
+                                onChange={(e) => {
+                                  const items = [...section.data.items];
+                                  const prev = items[i].question;
+                                  items[i] = { ...items[i], question: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                  updateSectionData(section.id, { ...section.data, items });
+                                }}
+                                placeholder="Savol"
+                              />
+                            </div>
+                            <div className="flex-col w-full">
+                              <LocalLangTabs />
+                              <textarea
+                                className="input-field"
+                                style={{ minHeight: '72px' }}
+                                value={getVal(item.answer)}
+                                onChange={(e) => {
+                                  const items = [...section.data.items];
+                                  const prev = items[i].answer;
+                                  items[i] = { ...items[i], answer: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                  updateSectionData(section.id, { ...section.data, items });
+                                }}
+                                placeholder="Javob"
+                              />
+                            </div>
                             <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
                               O‘chirish
                             </button>
@@ -1429,13 +1594,7 @@ export const Builder = () => {
 
                     {section.type === 'gallery' && (
                       <div className="flex-col gap-2">
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={section.data.title || ''}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Galereya sarlavhasi (ixtiyoriy)"
-                        />
+                        <MultilingualSectionTitle section={section} />
                         {section.data.items?.map((item, i) => (
                           <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
                             <input
@@ -1449,17 +1608,21 @@ export const Builder = () => {
                               }}
                               placeholder="Rasm URL (https://...)"
                             />
-                            <input
-                              type="text"
-                              className="input-field"
-                              value={item.caption || ''}
-                              onChange={(e) => {
-                                const items = [...section.data.items];
-                                items[i] = { ...items[i], caption: e.target.value };
-                                updateSectionData(section.id, { ...section.data, items });
-                              }}
-                              placeholder="Izoh"
-                            />
+                            <div className="flex-col w-full">
+                              <LocalLangTabs />
+                              <input
+                                type="text"
+                                className="input-field"
+                                value={getVal(item.caption)}
+                                onChange={(e) => {
+                                  const items = [...section.data.items];
+                                  const prev = items[i].caption;
+                                  items[i] = { ...items[i], caption: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                  updateSectionData(section.id, { ...section.data, items });
+                                }}
+                                placeholder="Izoh"
+                              />
+                            </div>
                             <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: section.data.items.filter((_, idx) => idx !== i) })}>
                               O‘chirish
                             </button>
@@ -1473,13 +1636,7 @@ export const Builder = () => {
 
                     {section.type === 'video' && (
                       <div className="flex-col gap-2">
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={section.data.title || ''}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Video sarlavhasi"
-                        />
+                        <MultilingualSectionTitle section={section} />
                         <input
                           type="text"
                           className="input-field"
@@ -1492,27 +1649,25 @@ export const Builder = () => {
 
                     {section.type === 'hours' && (
                       <div className="flex-col gap-2">
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={section.data.title || ''}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Sarlavha"
-                        />
+                        <MultilingualSectionTitle section={section} />
                         {section.data.lines?.map((line, i) => (
                           <div key={line.id} className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              className="input-field"
-                              style={{ flex: 1 }}
-                              value={line.label}
-                              onChange={(e) => {
-                                const lines = [...section.data.lines];
-                                lines[i] = { ...lines[i], label: e.target.value };
-                                updateSectionData(section.id, { ...section.data, lines });
-                              }}
-                              placeholder="Kun / yozuv"
-                            />
+                            <div className="flex-col w-full" style={{ flex: 1 }}>
+                              <LocalLangTabs />
+                              <input
+                                type="text"
+                                className="input-field"
+                                style={{ flex: 1 }}
+                                value={getVal(line.label)}
+                                onChange={(e) => {
+                                  const lines = [...section.data.lines];
+                                  const prev = lines[i].label;
+                                  lines[i] = { ...lines[i], label: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                  updateSectionData(section.id, { ...section.data, lines });
+                                }}
+                                placeholder="Kun / yozuv"
+                              />
+                            </div>
                             <input
                               type="text"
                               className="input-field"
@@ -1640,19 +1795,22 @@ export const Builder = () => {
                               </label>
                               <div className="flex-col gap-2" style={{ flex: 1, minWidth: '200px' }}>
                                 <div>
-                                  <span className="downloads-pdf-field-label">Ko‘rinadigan nom</span>
-                                  <input
-                                    type="text"
-                                    className="input-field downloads-pdf-input"
-                                    value={item.title}
-                                    disabled={rowBusy}
-                                    onChange={(e) => {
-                                      const items = [...section.data.items];
-                                      items[i] = { ...items[i], title: e.target.value };
-                                      updateSectionData(section.id, { ...section.data, items });
-                                    }}
-                                    placeholder="Masalan: Katalog 2025"
-                                  />
+                                  <div className="flex-col w-full">
+                                    <LocalLangTabs />
+                                    <input
+                                      type="text"
+                                      className="input-field downloads-pdf-input"
+                                      value={getVal(item.title)}
+                                      disabled={rowBusy}
+                                      onChange={(e) => {
+                                        const items = [...section.data.items];
+                                        const prev = items[i].title;
+                                        items[i] = { ...items[i], title: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                        updateSectionData(section.id, { ...section.data, items });
+                                      }}
+                                      placeholder="Masalan: Katalog 2025"
+                                    />
+                                  </div>
                                 </div>
                                 <label
                                   htmlFor={pdfInputId}
@@ -1745,7 +1903,7 @@ export const Builder = () => {
                           onClick={() =>
                             updateSectionData(section.id, {
                               ...section.data,
-                              items: [...(section.data.items || []), { id: generateId(), title: '', url: '', fileType: '' }],
+                              items: [...(section.data.items || []), { id: generateId(), title: { uz: 'Yangi fayl', ru: 'Новый файл', en: 'New file' }, url: '', fileType: '' }],
                             })}
                         >
                           <Plus size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.25rem' }} />
@@ -1756,13 +1914,7 @@ export const Builder = () => {
 
                     {section.type === 'quick_actions' && (
                       <div className="flex-col gap-2">
-                        <input
-                          type="text"
-                          className="input-field"
-                          value={section.data.title || ''}
-                          onChange={(e) => updateSectionData(section.id, { ...section.data, title: e.target.value })}
-                          placeholder="Blok sarlavhasi"
-                        />
+                        <MultilingualSectionTitle section={section} />
                         {section.data.items?.map((item, i) => (
                           <div key={item.id} className="flex-col gap-2 p-2" style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
                             <select
@@ -1779,17 +1931,21 @@ export const Builder = () => {
                               <option value="calendar">Google Calendar / bron</option>
                               <option value="custom">Havola</option>
                             </select>
-                            <input
-                              type="text"
-                              className="input-field"
-                              value={item.label || ''}
-                              onChange={(e) => {
-                                const items = [...section.data.items];
-                                items[i] = { ...items[i], label: e.target.value };
-                                updateSectionData(section.id, { ...section.data, items });
-                              }}
-                              placeholder="Tugma yozuvi"
-                            />
+                            <div className="flex-col w-full">
+                              <LocalLangTabs />
+                              <input
+                                type="text"
+                                className="input-field"
+                                value={getVal(item.label)}
+                                onChange={(e) => {
+                                  const items = [...section.data.items];
+                                  const prev = items[i].label;
+                                  items[i] = { ...items[i], label: typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value } };
+                                  updateSectionData(section.id, { ...section.data, items });
+                                }}
+                                placeholder="Tugma yozuvi"
+                              />
+                            </div>
                             <input
                               type="text"
                               className="input-field"
@@ -1806,7 +1962,7 @@ export const Builder = () => {
                             </button>
                           </div>
                         ))}
-                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '' }] })}>
+                        <button type="button" className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { ...section.data, items: [...(section.data.items || []), { id: generateId(), type: 'whatsapp', label: { uz: 'WhatsApp', ru: 'WhatsApp', en: 'WhatsApp' }, value: '' }] })}>
                           + Tugma
                         </button>
                         <div className="flex items-center gap-2 mt-3">

@@ -269,7 +269,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                ...getTextSectionRenderStyle(section.data, globalStyle),
              }}
            >
-              {section.data.text}
+              {t(section.data.text)}
            </div>
         );
       case 'map': {
@@ -350,8 +350,8 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                     padding: '0.5rem 0.75rem',
                   }}
                 >
-                  <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{item.question}</summary>
-                  <div style={{ marginTop: '0.5rem', fontSize: '0.9375rem', opacity: 0.95, lineHeight: 1.5 }}>{item.answer}</div>
+                  <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{t(item.question)}</summary>
+                  <div style={{ marginTop: '0.5rem', fontSize: '0.9375rem', opacity: 0.95, lineHeight: 1.5 }}>{t(item.answer)}</div>
                 </details>
               ))}
             </div>
@@ -373,7 +373,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                     style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: globalStyle.borderRadius, display: 'block' }}
                   />
                   {item.caption && (
-                    <figcaption style={{ fontSize: '0.75rem', marginTop: '0.25rem', textAlign: 'center', opacity: 0.85 }}>{item.caption}</figcaption>
+                    <figcaption style={{ fontSize: '0.75rem', marginTop: '0.25rem', textAlign: 'center', opacity: 0.85 }}>{t(item.caption)}</figcaption>
                   )}
                 </figure>
               ))}
@@ -429,7 +429,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {section.data.lines?.map((line) => (
                 <div key={line.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', fontSize: '0.9375rem' }}>
-                  <span style={{ opacity: 0.9 }}>{line.label}</span>
+                  <span style={{ opacity: 0.9 }}>{t(line.label)}</span>
                   <span style={{ fontWeight: 500, textAlign: 'right' }}>{line.value}</span>
                 </div>
               ))}
@@ -462,7 +462,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                 }}
               >
                 <ExternalLink size={18} style={{ marginRight: '0.5rem' }} />
-                {item.title}
+                {t(item.title)}
                 {item.fileType ? ` · ${item.fileType}` : ''}
               </a>
             ))}
@@ -498,7 +498,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
             )}
             {section.data.items?.map((item) => {
               const href = hrefFor(item.type, item.value);
-              const lab = item.label || (item.type === 'whatsapp' ? 'WhatsApp' : item.type === 'telegram' ? 'Telegram' : item.type === 'calendar' ? 'Bron qilish' : 'Havola');
+              const lab = t(item.label) || (item.type === 'whatsapp' ? 'WhatsApp' : item.type === 'telegram' ? 'Telegram' : item.type === 'calendar' ? 'Bron qilish' : 'Havola');
               return (
                 <a
                   key={item.id}
