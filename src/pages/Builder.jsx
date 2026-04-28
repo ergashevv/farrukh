@@ -51,6 +51,7 @@ export const Builder = () => {
   });
   
   const [activeTab, setActiveTab] = useState('design');
+  const [activeLang, setActiveLang] = useState(siteData.lang || 'uz');
   const [previewMode, setPreviewMode] = useState('mobile');
   const [publishModal, setPublishModal] = useState({ open: false, slug: '', copied: false });
   const iframeRef = useRef(null);
@@ -155,9 +156,9 @@ export const Builder = () => {
     }
     const win = iframeRef.current?.contentWindow;
     if (win) {
-      win.postMessage({ type: 'UPDATE_SITE_DATA', payload: siteData }, '*');
+      win.postMessage({ type: 'UPDATE_SITE_DATA', payload: { ...siteData, lang: siteData.lang || activeLang } }, '*');
     }
-  }, [siteData]);
+  }, [siteData, activeLang]);
 
   useEffect(() => {
     const handleIframeMessage = (e) => {
@@ -194,7 +195,23 @@ export const Builder = () => {
   };
 
   const handleContentChange = (key, value) => {
-    setSiteData({ ...siteData, content: { ...siteData.content, [key]: value } });
+    // Check if it's a localized field
+    const localizedFields = ['title', 'subtitle', 'description'];
+    if (localizedFields.includes(key)) {
+      const prevVal = siteData.content[key];
+      const newVal = typeof prevVal === 'object' && prevVal !== null 
+        ? { ...prevVal, [activeLang]: value }
+        : { uz: prevVal || '', ru: prevVal || '', en: prevVal || '', [activeLang]: value };
+      setSiteData({ ...siteData, content: { ...siteData.content, [key]: newVal } });
+    } else {
+      setSiteData({ ...siteData, content: { ...siteData.content, [key]: value } });
+    }
+  };
+
+  const getVal = (val, lang = activeLang) => {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    return val[lang] || '';
   };
 
   const handleSeoChange = (key, value) => {
@@ -313,36 +330,36 @@ export const Builder = () => {
 
   const addSection = (type) => {
     const newSection = { id: generateId(), type, data: {} };
-    if (type === 'links' || type === 'social') newSection.data.items = [{ id: generateId(), title: 'New Item', url: 'https://', platform: 'twitter' }];
-    if (type === 'contact') newSection.data = { email: '', phone: '' };
+    if (type === 'links' || type === 'social') newSection.data.items = [{ id: generateId(), title: { uz: 'Yangi havola', ru: 'Новая ссылка', en: 'New Link' }, url: 'https://', platform: 'twitter' }];
+    if (type === 'contact') newSection.data = { items: [{ id: generateId(), type: 'phone', value: '', label: { uz: 'Telefon', ru: 'Телефон', en: 'Call' } }] };
     if (type === 'text') {
       newSection.data = {
-        text: 'New text block',
+        text: { uz: 'Yangi matn bloki', ru: 'Новый текстовый блок', en: 'New text block' },
         align: 'center',
         fontSize: 'base',
         fontWeight: 'normal',
         color: '',
       };
     }
-    if (type === 'map') newSection.data = { title: '', mapProvider: 'google', embedUrl: '' };
+    if (type === 'map') newSection.data = { title: { uz: 'Manzilimiz', ru: 'Наш адрес', en: 'Our Location' }, mapProvider: 'google', embedUrl: '' };
     if (type === 'faq') {
       newSection.data = {
-        title: 'Savol-javob',
+        title: { uz: 'Savol-javoblar', ru: 'Вопросы и ответы', en: 'FAQ' },
         items: [{ id: generateId(), question: 'Savol?', answer: 'Javob.' }],
       };
     }
     if (type === 'gallery') {
       newSection.data = {
-        title: '',
+        title: { uz: 'Galereya', ru: 'Галерея', en: 'Gallery' },
         items: [{ id: generateId(), url: 'https://picsum.photos/seed/qr/400/300', caption: '' }],
       };
     }
     if (type === 'video') {
-      newSection.data = { title: 'Video', youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+      newSection.data = { title: { uz: 'Video', ru: 'Видео', en: 'Video' }, youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
     }
     if (type === 'hours') {
       newSection.data = {
-        title: 'Ish vaqti',
+        title: { uz: 'Ish vaqti', ru: 'Рабочее время', en: 'Working Hours' },
         lines: [
           { id: generateId(), label: 'Dush–Juma', value: '9:00 – 18:00' },
           { id: generateId(), label: 'Shanba', value: '10:00 – 14:00' },
@@ -351,11 +368,11 @@ export const Builder = () => {
     }
     if (type === 'downloads') {
       newSection.data = {
-        title: 'Fayllar',
+        title: { uz: 'Fayllar', ru: 'Файлы', en: 'Downloads' },
         items: [
           {
             id: generateId(),
-            title: 'Namuna PDF',
+            title: { uz: 'Hujjat', ru: 'Документ', en: 'Document' },
             url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
             fileType: 'PDF',
           },
@@ -364,10 +381,10 @@ export const Builder = () => {
     }
     if (type === 'quick_actions') {
       newSection.data = {
-        title: 'Tezkor aloqa',
+        title: { uz: 'Bog‘lanish', ru: 'Связаться', en: 'Contact' },
         items: [
-          { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '998901234567' },
-          { id: generateId(), type: 'telegram', label: 'Telegram', value: 'username' },
+          { id: generateId(), type: 'whatsapp', label: 'WhatsApp', value: '' },
+          { id: generateId(), type: 'telegram', label: 'Telegram', value: '' },
         ],
       };
     }
@@ -594,6 +611,29 @@ export const Builder = () => {
             <h2 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Mini Site Builder</h2>
           </div>
           <div className="editor-header__actions">
+            {/* Language Switcher */}
+            <div className="flex gap-1 mr-2" style={{ background: 'var(--bg-tertiary)', padding: '4px', borderRadius: 'var(--radius-sm)' }}>
+              {['uz', 'ru', 'en'].map(l => (
+                <button
+                  key={l}
+                  onClick={() => setActiveLang(l)}
+                  style={{
+                    padding: '4px 8px',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    backgroundColor: activeLang === l ? 'var(--primary-color)' : 'transparent',
+                    color: activeLang === l ? '#fff' : 'var(--text-secondary)'
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            
             <Link to="/" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
               Saytlarim
             </Link>
@@ -751,8 +791,54 @@ export const Builder = () => {
                     <option value="9999px">Pill</option>
                   </select>
                 </div>
-                <div>
-                  <span style={{ fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>Scroll animatsiya (AOS)</span>
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <span className="label">Top Navigation Buttons</span>
+              <div className="flex-col gap-3 mt-4">
+                 {siteData.globalStyle.headerButtons?.map((btn, i) => (
+                   <div key={btn.id} className="card p-3 flex-col gap-2" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="Button Name" 
+                        value={getVal(btn.label)} 
+                        onChange={(e) => {
+                          const newBtns = [...siteData.globalStyle.headerButtons];
+                          const prev = newBtns[i].label;
+                          newBtns[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                          handleGlobalStyleChange('headerButtons', newBtns);
+                        }} 
+                      />
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="URL" 
+                        value={btn.url} 
+                        onChange={(e) => {
+                          const newBtns = [...siteData.globalStyle.headerButtons];
+                          newBtns[i].url = e.target.value;
+                          handleGlobalStyleChange('headerButtons', newBtns);
+                        }} 
+                      />
+                      <button type="button" className="btn btn-secondary" style={{ fontSize: '0.7rem', color: '#ef4444' }} onClick={() => {
+                        const newBtns = siteData.globalStyle.headerButtons.filter((_, idx) => idx !== i);
+                        handleGlobalStyleChange('headerButtons', newBtns);
+                      }}>Delete</button>
+                   </div>
+                 ))}
+                 <button type="button" className="btn btn-secondary w-full" onClick={() => {
+                   const newBtns = [...(siteData.globalStyle.headerButtons || []), { id: generateId(), label: { uz: 'Yangi', ru: 'Новый', en: 'New' }, url: '#' }];
+                   handleGlobalStyleChange('headerButtons', newBtns);
+                 }}>+ Add Header Button</button>
+              </div>
+            </div>
+
+            <div className="editor-section">
+              <span className="label">AOS Settings</span>
+              <div className="flex-col gap-3 mt-4">
+                  <span style={{ fontSize: '0.875rem', display: 'block' }}>Scroll animatsiya (AOS)</span>
                   <select
                     className="input-field"
                     value={siteData.globalStyle.scrollAnimation || 'none'}
@@ -765,7 +851,6 @@ export const Builder = () => {
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.35rem 0 0' }}>
                     Bloklar scroll qilganda tanlangan effekt bilan paydo bo‘ladi.
                   </p>
-                </div>
               </div>
             </div>
 
@@ -938,7 +1023,7 @@ export const Builder = () => {
                     type="text"
                     className="input-field"
                     placeholder="Masalan: Jane Doe"
-                    value={siteData.content.title}
+                    value={getVal(siteData.content.title)}
                     onChange={(e) => handleContentChange('title', e.target.value)}
                   />
                 </div>
@@ -954,7 +1039,7 @@ export const Builder = () => {
                     type="text"
                     className="input-field"
                     placeholder="Lavozim yoki tagline"
-                    value={siteData.content.subtitle}
+                    value={getVal(siteData.content.subtitle)}
                     onChange={(e) => handleContentChange('subtitle', e.target.value)}
                   />
                 </div>
@@ -970,7 +1055,7 @@ export const Builder = () => {
                     className="input-field"
                     style={{ minHeight: '80px', resize: 'vertical' }}
                     placeholder="Qisqa tavsif..."
-                    value={siteData.content.description}
+                    value={getVal(siteData.content.description)}
                     onChange={(e) => handleContentChange('description', e.target.value)}
                   />
                 </div>
@@ -1079,6 +1164,7 @@ export const Builder = () => {
                                             <option value="youtube">YouTube</option>
                                             <option value="telegram">Telegram</option>
                                             <option value="whatsapp">WhatsApp</option>
+                                            <option value="web">Website</option>
                                         </select>
                                         <input type="text" className="input-field" style={{ flex: 1, minWidth: 0 }} value={item.url} onChange={(e) => {
                                           const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
@@ -1211,17 +1297,80 @@ export const Builder = () => {
 
                     {section.type === 'contact' && (
                       <div className="flex-col gap-3">
-                        <div className="flex gap-2">
-                          <input type="email" className="input-field" style={{ flex: 1 }} value={section.data.email} onChange={(e) => updateSectionData(section.id, { ...section.data, email: e.target.value })} placeholder="Email address" />
-                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.emailLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, emailLabel: e.target.value })} placeholder="Email nomi" />
-                        </div>
-                        <div className="flex gap-2">
-                          <input type="text" className="input-field" style={{ flex: 1 }} value={section.data.phone} onChange={(e) => updateSectionData(section.id, { ...section.data, phone: e.target.value })} placeholder="Phone number" />
-                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.phoneLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, phoneLabel: e.target.value })} placeholder="Call nomi" />
-                        </div>
-                        <div className="flex gap-2">
-                          <input type="text" className="input-field" style={{ flex: 1 }} value={section.data.website || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, website: e.target.value })} placeholder="Website URL (https://...)" />
-                          <input type="text" className="input-field" style={{ width: '40%' }} value={section.data.websiteLabel || ''} onChange={(e) => updateSectionData(section.id, { ...section.data, websiteLabel: e.target.value })} placeholder="Sayt nomi" />
+                        <div className="flex-col gap-2">
+                          {section.data.items?.map((item, i) => (
+                            <div key={item.id} className="card p-3 flex-col gap-2" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                              <div className="flex gap-2">
+                                <select 
+                                  className="input-field" 
+                                  style={{ width: '120px' }}
+                                  value={item.type}
+                                  onChange={(e) => {
+                                    const newItems = [...section.data.items];
+                                    newItems[i].type = e.target.value;
+                                    updateSectionData(section.id, { ...section.data, items: newItems });
+                                  }}
+                                >
+                                  <option value="phone">Phone</option>
+                                  <option value="email">Email</option>
+                                  <option value="website">Website</option>
+                                </select>
+                                <input 
+                                  type="text" 
+                                  className="input-field" 
+                                  style={{ flex: 1 }}
+                                  placeholder={item.type === 'email' ? 'email@example.com' : item.type === 'phone' ? '+998...' : 'https://...'}
+                                  value={item.value}
+                                  onChange={(e) => {
+                                    const newItems = [...section.data.items];
+                                    newItems[i].value = e.target.value;
+                                    updateSectionData(section.id, { ...section.data, items: newItems });
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary"
+                                  style={{ padding: '0.5rem', color: '#ef4444' }}
+                                  onClick={() => {
+                                    const newItems = section.data.items.filter((_, idx) => idx !== i);
+                                    updateSectionData(section.id, { ...section.data, items: newItems });
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                              <div className="flex-col gap-1">
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tugma matni ({activeLang}):</span>
+                                <input 
+                                  type="text" 
+                                  className="input-field"
+                                  value={getVal(item.label)}
+                                  onChange={(e) => {
+                                    const newItems = [...section.data.items];
+                                    const prev = newItems[i].label;
+                                    newItems[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                                    updateSectionData(section.id, { ...section.data, items: newItems });
+                                  }}
+                                  placeholder="Tugma nomi"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                          <button 
+                            type="button" 
+                            className="btn btn-secondary w-full"
+                            onClick={() => {
+                              const newItems = [...(section.data.items || []), { 
+                                id: generateId(), 
+                                type: 'phone', 
+                                value: '', 
+                                label: { uz: 'Yangi', ru: 'Новый', en: 'New' } 
+                              }];
+                              updateSectionData(section.id, { ...section.data, items: newItems });
+                            }}
+                          >
+                            + Aloqa qo'shish
+                          </button>
                         </div>
                         <div className="flex items-center gap-2">
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>

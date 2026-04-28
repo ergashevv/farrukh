@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { ensureSiteAosInitialized, syncSiteAos } from '../../core/aosBootstrap';
-import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin, Calendar, MessageCircle } from 'lucide-react';
+import { Link as LinkIcon, Mail, Phone, ExternalLink, MapPin, Calendar, MessageCircle, Globe, Languages } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { isAllowedMapEmbedUrl } from '../../core/mapEmbed';
 import { getTextSectionRenderStyle, getProfileFieldStyle } from '../../core/textSectionStyle';
@@ -60,6 +60,8 @@ const getIcon = (platform, props) => {
     case 'whatsapp': return <MessageCircle {...props} />;
     case 'mail': return <Mail {...props} />;
     case 'phone': return <Phone {...props} />;
+    case 'web':
+    case 'website': return <Globe {...props} />;
     default: return <LinkIcon {...props} />;
   }
 };
@@ -127,6 +129,14 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
       ? { background: globalStyle.backgroundGradient }
       : { backgroundColor: globalStyle.backgroundColor };
 
+  const [activeLang, setActiveLang] = useState(data.lang || 'uz');
+
+  const t = (field) => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    return field[activeLang] || field['uz'] || field['en'] || field['ru'] || '';
+  };
+
   const containerStyle = {
     ...bgStyle,
     minHeight: '100vh',
@@ -136,9 +146,9 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    padding: '3rem 1.5rem',
+    padding: '1.5rem',
+    paddingTop: '3rem',
     boxSizing: 'border-box',
-    /* AOS window scroll bilan ishlaydi — vertikal scroll konteyner emas, balki hujjat */
     overflowX: 'hidden',
   };
 
@@ -208,7 +218,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                   else if (globalStyle.buttonStyle === 'glass') { e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'; }
                 }}
               >
-                {link.title}
+                {t(link.title)}
               </a>
             ))}
           </div>
@@ -216,43 +226,37 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
       case 'contact':
         return (
           <div key={section.id} style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-             {section.data.email && (
-               <a href={`mailto:${section.data.email}`} 
-                  style={{
-                    ...getBtnStyle(), 
-                    flex: 1, 
-                    margin: 0, 
-                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
-                  }} 
-                  onClick={() => fireTrack(`contact:${section.id}:email`)}>
-                 <Mail size={18} style={{ marginRight: '0.5rem' }} /> {section.data.emailLabel || 'Email'}
-               </a>
-             )}
-             {section.data.phone && (
-               <a href={`tel:${section.data.phone}`} 
-                  style={{
-                    ...getBtnStyle(), 
-                    flex: 1, 
-                    margin: 0,
-                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
-                  }} 
-                  onClick={() => fireTrack(`contact:${section.id}:phone`)}>
-                 <Phone size={18} style={{ marginRight: '0.5rem' }} /> {section.data.phoneLabel || 'Call'}
-               </a>
-             )}
-             {section.data.website && (
-               <a href={section.data.website.startsWith('http') ? section.data.website : `https://${section.data.website}`} 
-                  target="_blank" rel="noreferrer"
-                  style={{
-                    ...getBtnStyle(), 
-                    width: '100%', 
-                    margin: '0.5rem 0 0 0',
-                    color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
-                  }} 
-                  onClick={() => fireTrack(`contact:${section.id}:website`)}>
-                 <ExternalLink size={18} style={{ marginRight: '0.5rem' }} /> {section.data.websiteLabel || 'Website'}
-               </a>
-             )}
+             {section.data.items?.map((item) => {
+               const isEmail = item.type === 'email';
+               const isPhone = item.type === 'phone';
+               const href = isEmail 
+                 ? `mailto:${item.value}` 
+                 : isPhone 
+                   ? `tel:${item.value}` 
+                   : (item.value?.startsWith('http') ? item.value : `https://${item.value}`);
+               
+               const icon = isEmail ? <Mail size={18} style={{ marginRight: '0.5rem' }} /> : isPhone ? <Phone size={18} style={{ marginRight: '0.5rem' }} /> : <ExternalLink size={18} style={{ marginRight: '0.5rem' }} />;
+
+               if (!item.value) return null;
+
+               return (
+                 <a 
+                   key={item.id}
+                   href={href}
+                   target={!isEmail && !isPhone ? "_blank" : undefined}
+                   rel={!isEmail && !isPhone ? "noreferrer" : undefined}
+                   style={{
+                     ...getBtnStyle(), 
+                     flex: (isEmail || isPhone) ? '1 1 45%' : '1 1 100%', 
+                     margin: 0, 
+                     color: section.data.color || (globalStyle.buttonStyle === 'filled' ? '#ffffff' : globalStyle.textColor)
+                   }} 
+                   onClick={() => fireTrack(`contact:${section.id}:${item.id}`)}
+                 >
+                   {icon} {t(item.label)}
+                 </a>
+               );
+             })}
           </div>
         );
       case 'text':
@@ -291,7 +295,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                 }}
               >
                 <MapPin size={18} style={{ color: accent, flexShrink: 0 }} aria-hidden />
-                <span>{section.data.title}</span>
+                <span>{t(section.data.title)}</span>
               </div>
             )}
             <div
@@ -333,7 +337,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{t(section.data.title)}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
               {section.data.items?.map((item) => (
@@ -357,7 +361,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{t(section.data.title)}</div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem', width: '100%' }}>
               {section.data.items?.map((item) => (
@@ -382,7 +386,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ width: '100%', marginBottom: '1.5rem' }}>
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{t(section.data.title)}</div>
             )}
             <div
               style={{
@@ -420,7 +424,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
             }}
           >
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center' }}>{t(section.data.title)}</div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
               {section.data.lines?.map((line) => (
@@ -436,7 +440,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{t(section.data.title)}</div>
             )}
             {section.data.items?.map((item) => (
               <a
@@ -490,7 +494,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         return (
           <div key={section.id} style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '1.5rem' }}>
             {section.data.title && (
-              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{section.data.title}</div>
+              <div style={{ fontWeight: 600, marginBottom: '0.75rem', textAlign: 'center', width: '100%' }}>{t(section.data.title)}</div>
             )}
             {section.data.items?.map((item) => {
               const href = hrefFor(item.type, item.value);
@@ -532,6 +536,40 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
   return (
     <div style={containerStyle} className="site-renderer-container">
       <div style={maxW}>
+        {/* Header Buttons */}
+        {globalStyle.headerButtons && globalStyle.headerButtons.length > 0 && (
+          <div style={{ width: '100%', display: 'flex', gap: '0.5rem', justifyContent: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
+            {globalStyle.headerButtons.map(btn => (
+              <a 
+                key={btn.id} 
+                href={btn.url} 
+                className="header-btn"
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  borderRadius: globalStyle.borderRadius,
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  border: `1px solid ${globalStyle.primaryColor}40`,
+                  color: globalStyle.textColor,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = globalStyle.primaryColor;
+                  e.currentTarget.style.color = '#fff';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.color = globalStyle.textColor;
+                }}
+              >
+                {t(btn.label)}
+              </a>
+            ))}
+          </div>
+        )}
+
         {content.avatar && (
           <img 
             src={content.avatar} alt={content.title || 'Avatar'}
@@ -562,9 +600,10 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               ...getProfileFieldStyle(content.titleStyle, 'title', globalStyle),
               marginBottom: '0.25rem',
               width: '100%',
+              textAlign: content.titleStyle?.align || 'center'
             }}
           >
-            {content.title}
+            {t(content.title)}
           </h1>
         )}
         {content.subtitle && (
@@ -574,9 +613,10 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               ...getProfileFieldStyle(content.subtitleStyle, 'subtitle', globalStyle),
               marginBottom: '1rem',
               width: '100%',
+              textAlign: content.subtitleStyle?.align || 'center'
             }}
           >
-            {content.subtitle}
+            {t(content.subtitle)}
           </h2>
         )}
         {content.description && (
@@ -586,17 +626,45 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               ...getProfileFieldStyle(content.descriptionStyle, 'description', globalStyle),
               marginBottom: '2rem',
               width: '100%',
+              textAlign: content.descriptionStyle?.align || 'center'
             }}
           >
-            {content.description}
+            {t(content.description)}
           </p>
         )}
 
         {onReorder ? (
           <DragDropContext onDragEnd={(res) => { if(res.destination) onReorder(res.source.index, res.destination.index); }}>
             <Droppable droppableId="preview-sections">
-              {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {(provided, snapshot) => (
+                <div 
+                  {...provided.droppableProps} 
+                  ref={provided.innerRef} 
+                  style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  {/* Visual Guide / Ruler */}
+                  {snapshot.isDraggingOver && (
+                    <div style={{
+                      position: 'absolute',
+                      left: '-20px',
+                      right: '-20px',
+                      top: 0,
+                      bottom: 0,
+                      pointerEvents: 'none',
+                      borderLeft: '1px dashed rgba(0,0,0,0.1)',
+                      borderRight: '1px dashed rgba(0,0,0,0.1)',
+                      zIndex: 0
+                    }}>
+                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(0,0,0,0.05)', transform: 'translateX(-50%)' }} />
+                    </div>
+                  )}
+
                   {content.sections?.map((section, idx) => (
                     <Draggable key={section.id} draggableId={section.id} index={idx}>
                       {(provided, snap) => (
@@ -610,8 +678,17 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                             ...provided.draggableProps.style,
                             opacity: snap.isDragging ? 0.7 : 1,
                             transform: snap.isDragging ? `${provided.draggableProps.style?.transform} scale(1.02)` : provided.draggableProps.style?.transform,
+                            position: 'relative',
+                            zIndex: snap.isDragging ? 10 : 1
                           }}
                         >
+                          {/* Item Rulers when dragging */}
+                          {snap.isDragging && (
+                             <>
+                                <div style={{ position: 'absolute', top: '-10px', left: '-40px', right: '-40px', height: '1px', background: 'var(--primary-color, #000)', opacity: 0.3 }} />
+                                <div style={{ position: 'absolute', bottom: '-10px', left: '-40px', right: '-40px', height: '1px', background: 'var(--primary-color, #000)', opacity: 0.3 }} />
+                             </>
+                          )}
                           {renderSection(section)}
                         </div>
                       )}
@@ -628,6 +705,32 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               <div key={section.id} style={{ width: '100%' }} {...aosAttrs(168 + idx * 56)}>
                 {renderSection(section)}
               </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Language Switcher for Visitors */}
+        {!onReorder && (
+          <div style={{ marginTop: '2.5rem', display: 'flex', gap: '0.75rem', opacity: 0.6 }}>
+            {['uz', 'ru', 'en'].map(l => (
+              <button 
+                key={l}
+                onClick={() => setActiveLang(l)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  fontWeight: activeLang === l ? 700 : 400,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: activeLang === l ? 'rgba(0,0,0,0.05)' : 'transparent'
+                }}
+              >
+                {l}
+              </button>
             ))}
           </div>
         )}

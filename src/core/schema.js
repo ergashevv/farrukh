@@ -13,10 +13,11 @@ export const defaultQrStyle = {
 export const defaultSiteData = {
   id: generateId(),
   theme: 'minimal',
+  lang: 'uz', // default language
   qrStyle: { ...defaultQrStyle },
   seo: {
-    pageTitle: '',
-    description: '',
+    pageTitle: { uz: '', ru: '', en: '' },
+    description: { uz: '', ru: '', en: '' },
     ogImage: '',
   },
   privacy: {
@@ -33,13 +34,14 @@ export const defaultSiteData = {
     buttonStyle: 'filled',
     backgroundGradient: '',
     scrollAnimation: 'none',
+    headerButtons: [] // New: customizable header buttons
   },
   content: {
     avatar: '',
     avatarShape: 'circle',
-    title: 'Jane Doe',
-    subtitle: 'Product Designer & Developer',
-    description: 'I build beautiful, scalable, and intuitive web applications.',
+    title: { uz: 'Jane Doe', ru: 'Jane Doe', en: 'Jane Doe' },
+    subtitle: { uz: 'Product Designer & Developer', ru: 'Дизайнер продукта и разработчик', en: 'Product Designer & Developer' },
+    description: { uz: 'I build beautiful, scalable, and intuitive web applications.', ru: 'Я создаю красивые, масштабируемые и интуитивно понятные веб-приложения.', en: 'I build beautiful, scalable, and intuitive web applications.' },
     sections: [
       {
         id: generateId(),
@@ -57,9 +59,9 @@ export const defaultSiteData = {
         type: 'links',
         data: {
           items: [
-            { id: generateId(), title: 'My Portfolio', url: 'https://example.com' },
-            { id: generateId(), title: 'Book a Call', url: 'https://example.com/book' },
-            { id: generateId(), title: 'Latest Project', url: 'https://example.com/project' },
+            { id: generateId(), title: { uz: 'My Portfolio', ru: 'Мое Портфолио', en: 'My Portfolio' }, url: 'https://example.com' },
+            { id: generateId(), title: { uz: 'Book a Call', ru: 'Забронировать звонок', en: 'Book a Call' }, url: 'https://example.com/book' },
+            { id: generateId(), title: { uz: 'Latest Project', ru: 'Последний проект', en: 'Latest Project' }, url: 'https://example.com/project' },
           ]
         }
       },
@@ -67,12 +69,11 @@ export const defaultSiteData = {
         id: generateId(),
         type: 'contact',
         data: {
-          email: 'hello@example.com',
-          emailLabel: 'Email',
-          phone: '+1 234 567 890',
-          phoneLabel: 'Call',
-          website: '',
-          websiteLabel: 'Website'
+          items: [
+            { id: generateId(), type: 'email', value: 'hello@example.com', label: { uz: 'Email', ru: 'Email', en: 'Email' } },
+            { id: generateId(), type: 'phone', value: '+1 234 567 890', label: { uz: 'Telefon', ru: 'Телефон', en: 'Call' } },
+            { id: generateId(), type: 'website', value: '', label: { uz: 'Website', ru: 'Сайт', en: 'Website' } }
+          ]
         }
       }
     ]
