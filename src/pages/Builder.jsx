@@ -676,23 +676,11 @@ export const Builder = () => {
               </button>
             )}
           </div>
-            {getStoredAuth()?.token && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  clearAuth();
-                  navigate('/login');
-                }}
-              >
-                Chiqish
-              </button>
-            )}
+
             <button type="button" className="btn btn-primary" onClick={handlePublish}>
               Saqlash
             </button>
           </div>
-        </div>
 
         {loadError && (
           <div style={{ padding: '0.75rem 1.5rem', background: '#fef2f2', color: '#b91c1c', fontSize: '0.875rem' }}>
