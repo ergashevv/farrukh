@@ -1109,7 +1109,7 @@ export const Builder = () => {
                                 </div>
                               </div>
 
-                    {(section.type === 'links' || section.type === 'social') && (
+                    {(section.type === 'links' || section.type === 'social' || section.type === 'contact') && (
                       <Droppable droppableId={`items-${section.id}`} type="item">
                         {(provided) => (
                           <div ref={provided.innerRef} {...provided.droppableProps} className="flex-col gap-2">
@@ -1119,7 +1119,7 @@ export const Builder = () => {
                                   <div 
                                     ref={provided.innerRef} 
                                     {...provided.draggableProps} 
-                                    className={`flex${section.type === 'links' ? '-col' : ''} gap-2 p-2`} 
+                                    className={`flex${(section.type === 'links' || section.type === 'contact') ? '-col' : ''} gap-2 p-2`} 
                                     style={{ 
                                       background: 'var(--bg-secondary)', 
                                       borderRadius: 'var(--radius-sm)', 
@@ -1134,8 +1134,11 @@ export const Builder = () => {
                                           <GripVertical size={16} color="var(--text-muted)" />
                                         </div>
                                         <div className="flex-col gap-2" style={{ flex: 1, minWidth: 0 }}>
-                                          <input type="text" className="input-field" value={item.title} onChange={(e) => {
-                                            const newItems = [...section.data.items]; newItems[i].title = e.target.value; updateSectionData(section.id, { items: newItems });
+                                          <input type="text" className="input-field" value={getVal(item.title)} onChange={(e) => {
+                                            const newItems = [...section.data.items]; 
+                                            const prev = newItems[i].title;
+                                            newItems[i].title = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                                            updateSectionData(section.id, { items: newItems });
                                           }} placeholder="Link Title" />
                                           <input type="text" className="input-field" value={item.url} onChange={(e) => {
                                             const newItems = [...section.data.items]; newItems[i].url = e.target.value; updateSectionData(section.id, { items: newItems });
@@ -1150,6 +1153,66 @@ export const Builder = () => {
                                         >
                                           <Trash2 size={16} />
                                         </button>
+                                      </div>
+                                    ) : section.type === 'contact' ? (
+                                      <div className="flex-col gap-2 w-full">
+                                        <div className="flex gap-2 items-center">
+                                          <div {...provided.dragHandleProps} style={{ cursor: 'grab', display: 'flex' }}>
+                                            <GripVertical size={16} color="var(--text-muted)" />
+                                          </div>
+                                          <select 
+                                            className="input-field" 
+                                            style={{ width: '100px' }}
+                                            value={item.type}
+                                            onChange={(e) => {
+                                              const newItems = [...section.data.items];
+                                              newItems[i].type = e.target.value;
+                                              updateSectionData(section.id, { ...section.data, items: newItems });
+                                            }}
+                                          >
+                                            <option value="phone">Phone</option>
+                                            <option value="email">Email</option>
+                                            <option value="website">Website</option>
+                                          </select>
+                                          <input 
+                                            type="text" 
+                                            className="input-field" 
+                                            style={{ flex: 1 }}
+                                            placeholder={item.type === 'email' ? 'email@example.com' : item.type === 'phone' ? '+998...' : 'https://...'}
+                                            value={item.value}
+                                            onChange={(e) => {
+                                              const newItems = [...section.data.items];
+                                              newItems[i].value = e.target.value;
+                                              updateSectionData(section.id, { ...section.data, items: newItems });
+                                            }}
+                                          />
+                                          <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            style={{ padding: '0.5rem', color: '#ef4444' }}
+                                            onClick={() => {
+                                              const newItems = section.data.items.filter((_, idx) => idx !== i);
+                                              updateSectionData(section.id, { ...section.data, items: newItems });
+                                            }}
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                        <div className="flex-col gap-1 pl-6">
+                                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tugma matni ({activeLang}):</span>
+                                          <input 
+                                            type="text" 
+                                            className="input-field"
+                                            value={getVal(item.label)}
+                                            onChange={(e) => {
+                                              const newItems = [...section.data.items];
+                                              const prev = newItems[i].label;
+                                              newItems[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
+                                              updateSectionData(section.id, { ...section.data, items: newItems });
+                                            }}
+                                            placeholder="Tugma nomi"
+                                          />
+                                        </div>
                                       </div>
                                     ) : (
                                       <div className="flex gap-2 items-center w-full">
@@ -1192,7 +1255,7 @@ export const Builder = () => {
 
                     {section.type === 'links' && (
                        <>
-                        <button className="btn btn-secondary w-full mt-2" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...section.data.items, { id: generateId(), title: 'New Link', url: '' }] })}>+ Add Link</button>
+                        <button className="btn btn-secondary w-full mt-2" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...section.data.items, { id: generateId(), title: { uz: 'Yangi', ru: 'Новый', en: 'New' }, url: '' }] })}>+ Add Link</button>
                         <div className="flex items-center gap-2 mt-3">
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
                           <input
@@ -1216,6 +1279,10 @@ export const Builder = () => {
 
                     {section.type === 'social' && (
                        <button className="btn btn-secondary w-full" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...section.data.items, { id: generateId(), platform: 'twitter', url: '' }] })}>+ Add Social</button>
+                    )}
+
+                    {section.type === 'contact' && (
+                       <button className="btn btn-secondary w-full mt-2" style={{ fontSize: '0.75rem' }} onClick={() => updateSectionData(section.id, { items: [...(section.data.items || []), { id: generateId(), type: 'phone', value: '', label: { uz: 'Telefon', ru: 'Телефон', en: 'Call' } }] })}>+ Aloqa qo'shish</button>
                     )}
 
                     {section.type === 'text' && (
@@ -1296,83 +1363,7 @@ export const Builder = () => {
                     )}
 
                     {section.type === 'contact' && (
-                      <div className="flex-col gap-3">
-                        <div className="flex-col gap-2">
-                          {section.data.items?.map((item, i) => (
-                            <div key={item.id} className="card p-3 flex-col gap-2" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-                              <div className="flex gap-2">
-                                <select 
-                                  className="input-field" 
-                                  style={{ width: '120px' }}
-                                  value={item.type}
-                                  onChange={(e) => {
-                                    const newItems = [...section.data.items];
-                                    newItems[i].type = e.target.value;
-                                    updateSectionData(section.id, { ...section.data, items: newItems });
-                                  }}
-                                >
-                                  <option value="phone">Phone</option>
-                                  <option value="email">Email</option>
-                                  <option value="website">Website</option>
-                                </select>
-                                <input 
-                                  type="text" 
-                                  className="input-field" 
-                                  style={{ flex: 1 }}
-                                  placeholder={item.type === 'email' ? 'email@example.com' : item.type === 'phone' ? '+998...' : 'https://...'}
-                                  value={item.value}
-                                  onChange={(e) => {
-                                    const newItems = [...section.data.items];
-                                    newItems[i].value = e.target.value;
-                                    updateSectionData(section.id, { ...section.data, items: newItems });
-                                  }}
-                                />
-                                <button
-                                  type="button"
-                                  className="btn btn-secondary"
-                                  style={{ padding: '0.5rem', color: '#ef4444' }}
-                                  onClick={() => {
-                                    const newItems = section.data.items.filter((_, idx) => idx !== i);
-                                    updateSectionData(section.id, { ...section.data, items: newItems });
-                                  }}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                              <div className="flex-col gap-1">
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tugma matni ({activeLang}):</span>
-                                <input 
-                                  type="text" 
-                                  className="input-field"
-                                  value={getVal(item.label)}
-                                  onChange={(e) => {
-                                    const newItems = [...section.data.items];
-                                    const prev = newItems[i].label;
-                                    newItems[i].label = typeof prev === 'object' ? { ...prev, [activeLang]: e.target.value } : { uz: prev, ru: prev, en: prev, [activeLang]: e.target.value };
-                                    updateSectionData(section.id, { ...section.data, items: newItems });
-                                  }}
-                                  placeholder="Tugma nomi"
-                                />
-                              </div>
-                            </div>
-                          ))}
-                          <button 
-                            type="button" 
-                            className="btn btn-secondary w-full"
-                            onClick={() => {
-                              const newItems = [...(section.data.items || []), { 
-                                id: generateId(), 
-                                type: 'phone', 
-                                value: '', 
-                                label: { uz: 'Yangi', ru: 'Новый', en: 'New' } 
-                              }];
-                              updateSectionData(section.id, { ...section.data, items: newItems });
-                            }}
-                          >
-                            + Aloqa qo'shish
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-3">
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
                           <input
                             type="color"
@@ -1390,7 +1381,6 @@ export const Builder = () => {
                             Tema rangi
                           </button>
                         </div>
-                      </div>
                     )}
 
                     {section.type === 'faq' && (
