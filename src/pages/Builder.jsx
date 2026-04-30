@@ -502,7 +502,7 @@ export const Builder = () => {
     if (!item || item.id !== itemId) return;
 
     const delKey = `${sectionId}-${itemId}`;
-    const label = String(item.title || '').trim() || `PDF ${itemIndex + 1}`;
+    const label = getVal(item.title).trim() || `PDF ${itemIndex + 1}`;
     const msg = editSlug
       ? `«${label}» o‘chirilsinmi?\n\nBazadagi sayt darhol yangilanadi. Vercel Blob dagi PDF ham o‘chiriladi.`
       : `«${label}» qoralamadan olib tashlansinmi?\n\n(Sayt hali saqlanmagan — serverdagi ma’lumot o‘zgarmaydi.)`;
@@ -2044,20 +2044,43 @@ export const Builder = () => {
                 Jonli sahifa sarlavhasi, tavsif va ijtimoiy tarmoqlarda rasm (og:image).
               </p>
               <div className="flex-col gap-3 mt-2">
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Brauzer tab / og:title"
-                  value={(siteData.seo || {}).pageTitle || ''}
-                  onChange={(e) => handleSeoChange('pageTitle', e.target.value)}
-                />
-                <textarea
-                  className="input-field"
-                  style={{ minHeight: '72px' }}
-                  placeholder="Qisqa tavsif (meta description)"
-                  value={(siteData.seo || {}).description || ''}
-                  onChange={(e) => handleSeoChange('description', e.target.value)}
-                />
+                <div className="flex-col gap-1">
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Brauzer tab / og:title (UZ/RU/EN):</span>
+                  <div className="flex gap-1">
+                    {['uz', 'ru', 'en'].map(l => (
+                      <input
+                        key={l}
+                        type="text"
+                        className="input-field"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem' }}
+                        placeholder={l.toUpperCase()}
+                        value={getVal((siteData.seo || {}).pageTitle, l)}
+                        onChange={(e) => {
+                          const prev = (siteData.seo || {}).pageTitle;
+                          const newVal = typeof prev === 'object' ? { ...prev, [l]: e.target.value } : { uz: prev, ru: prev, en: prev, [l]: e.target.value };
+                          handleSeoChange('pageTitle', newVal);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-col gap-1">
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tavsif (meta description) (UZ/RU/EN):</span>
+                  {['uz', 'ru', 'en'].map(l => (
+                    <textarea
+                      key={l}
+                      className="input-field"
+                      style={{ minHeight: '48px', fontSize: '0.75rem', padding: '0.35rem' }}
+                      placeholder={l.toUpperCase()}
+                      value={getVal((siteData.seo || {}).description, l)}
+                      onChange={(e) => {
+                        const prev = (siteData.seo || {}).description;
+                        const newVal = typeof prev === 'object' ? { ...prev, [l]: e.target.value } : { uz: prev, ru: prev, en: prev, [l]: e.target.value };
+                        handleSeoChange('description', newVal);
+                      }}
+                    />
+                  ))}
+                </div>
                 <input
                   type="text"
                   className="input-field"

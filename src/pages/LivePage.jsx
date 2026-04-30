@@ -17,6 +17,13 @@ export const LivePage = () => {
   const [unlockErr, setUnlockErr] = useState('');
   const [unlocking, setUnlocking] = useState(false);
 
+  const t = (field) => {
+    if (!field) return '';
+    if (typeof field === 'string') return field;
+    const l = data?.lang || 'uz';
+    return field[l] || field['uz'] || field['en'] || field['ru'] || '';
+  };
+
   useEffect(() => {
     if (!slug) return;
     let cancelled = false;
@@ -90,8 +97,8 @@ export const LivePage = () => {
 
   useEffect(() => {
     if (!data) return;
-    const title = String(data.seo?.pageTitle || data.content?.title || slug || '').trim() || DEFAULT_DOC_TITLE;
-    const desc = String(data.seo?.description || data.content?.description || '').trim();
+    const title = String(t(data.seo?.pageTitle) || t(data.content?.title) || slug || '').trim() || DEFAULT_DOC_TITLE;
+    const desc = String(t(data.seo?.description) || t(data.content?.description) || '').trim();
 
     document.title = title;
 
@@ -114,7 +121,7 @@ export const LivePage = () => {
       m.setAttribute('content', content);
     };
 
-    setOg('og:title', String(data.seo?.pageTitle || data.content?.title || '').trim());
+    setOg('og:title', String(t(data.seo?.pageTitle) || t(data.content?.title) || '').trim());
     setOg('og:description', desc);
     setOg('og:image', String(data.seo?.ogImage || '').trim());
     setOg('og:type', 'website');
