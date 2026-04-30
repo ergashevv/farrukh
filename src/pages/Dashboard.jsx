@@ -12,6 +12,12 @@ export const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
+  const t = (v) => {
+    if (!v) return '';
+    if (typeof v === 'string') return v;
+    return v.uz || v.en || v.ru || '';
+  };
+
   const auth = getStoredAuth();
 
   useEffect(() => {
@@ -125,7 +131,7 @@ export const Dashboard = () => {
                 <div className="flex gap-3 items-center" style={{ flex: 1, minWidth: 0 }}>
                   <SitePreviewThumb preview={s.preview} title={s.title} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>{s.title}</div>
+                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>{t(s.title)}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                       /{s.slug}
                       {typeof s.viewCount === 'number' ? (

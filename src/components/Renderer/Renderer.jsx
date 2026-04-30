@@ -315,7 +315,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               }}
             >
               <iframe
-                title={section.data.title || 'Xarita'}
+                title={t(section.data.title) || 'Xarita'}
                 src={safeSrc}
                 style={{
                   position: 'absolute',
@@ -368,7 +368,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
                 <figure key={item.id} style={{ margin: 0 }}>
                   <img
                     src={item.url}
-                    alt={item.caption || ''}
+                    alt={t(item.caption) || ''}
                     loading="lazy"
                     style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: globalStyle.borderRadius, display: 'block' }}
                   />
@@ -399,7 +399,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
               }}
             >
               <iframe
-                title={section.data.title || 'Video'}
+                title={t(section.data.title) || 'Video'}
                 src={`https://www.youtube-nocookie.com/embed/${vid}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
@@ -572,7 +572,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
 
         {content.avatar && (
           <img 
-            src={content.avatar} alt={content.title || 'Avatar'}
+            src={content.avatar} alt={t(content.title) || 'Avatar'}
             loading="eager"
             decoding="async"
             {...aosAttrs(0)}

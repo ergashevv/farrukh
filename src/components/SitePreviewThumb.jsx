@@ -12,7 +12,14 @@ export function SitePreviewThumb({ preview, title }) {
   const textColor = gs.textColor || '#18181b';
   const primary = gs.primaryColor || '#000000';
   const shape = gs.avatarShape === 'square' ? '10px' : '50%';
-  const initial = String(title || '?').trim().charAt(0).toUpperCase() || '?';
+  
+  const t = (v) => {
+    if (!v) return '';
+    if (typeof v === 'string') return v;
+    return v.uz || v.en || v.ru || '';
+  };
+
+  const initial = String(t(title) || '?').trim().charAt(0).toUpperCase() || '?';
 
   return (
     <div
@@ -84,7 +91,7 @@ export function SitePreviewThumb({ preview, title }) {
           wordBreak: 'break-word',
         }}
       >
-        {title || '—'}
+        {t(title) || '—'}
       </div>
     </div>
   );
