@@ -273,7 +273,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
            </div>
         );
       case 'map': {
-        const raw = section.data.embedUrl?.trim() || '';
+        const raw = String(section.data.embedUrl || '').trim();
         const safeSrc = isAllowedMapEmbedUrl(raw) ? raw : null;
         if (!safeSrc) return null;
         const provider = section.data.mapProvider || 'google';
@@ -470,7 +470,7 @@ export const Renderer = ({ data, onReorder, siteSlug }) => {
         );
       case 'quick_actions': {
         const hrefFor = (type, value) => {
-          const v = (value || '').trim();
+          const v = String(value || '').trim();
           if (!v) return '#';
           if (type === 'whatsapp') {
             const digits = v.replace(/\D/g, '');

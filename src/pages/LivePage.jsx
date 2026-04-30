@@ -90,8 +90,8 @@ export const LivePage = () => {
 
   useEffect(() => {
     if (!data) return;
-    const title = (data.seo?.pageTitle || data.content?.title || slug || '').trim() || DEFAULT_DOC_TITLE;
-    const desc = (data.seo?.description || data.content?.description || '').trim();
+    const title = String(data.seo?.pageTitle || data.content?.title || slug || '').trim() || DEFAULT_DOC_TITLE;
+    const desc = String(data.seo?.description || data.content?.description || '').trim();
 
     document.title = title;
 
@@ -114,9 +114,9 @@ export const LivePage = () => {
       m.setAttribute('content', content);
     };
 
-    setOg('og:title', (data.seo?.pageTitle || data.content?.title || '').trim());
+    setOg('og:title', String(data.seo?.pageTitle || data.content?.title || '').trim());
     setOg('og:description', desc);
-    setOg('og:image', (data.seo?.ogImage || '').trim());
+    setOg('og:image', String(data.seo?.ogImage || '').trim());
     setOg('og:type', 'website');
 
     return () => {

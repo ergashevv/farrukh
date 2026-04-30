@@ -1,6 +1,6 @@
 /** @param {string} raw */
 export function extractYoutubeVideoId(raw) {
-  const s = (raw || '').trim();
+  const s = String(raw || '').trim();
   if (!s) return null;
   try {
     const u = new URL(s.includes('://') ? s : `https://${s}`);

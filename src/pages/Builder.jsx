@@ -479,7 +479,7 @@ export const Builder = () => {
         return;
       }
       const items = [...section.data.items];
-      const baseTitle = (prev.title || '').trim();
+      const baseTitle = String(prev.title || '').trim();
       const fromFile = file.name.replace(/\.pdf$/i, '').trim();
       items[itemIndex] = {
         ...prev,
@@ -502,7 +502,7 @@ export const Builder = () => {
     if (!item || item.id !== itemId) return;
 
     const delKey = `${sectionId}-${itemId}`;
-    const label = (item.title || '').trim() || `PDF ${itemIndex + 1}`;
+    const label = String(item.title || '').trim() || `PDF ${itemIndex + 1}`;
     const msg = editSlug
       ? `«${label}» o‘chirilsinmi?\n\nBazadagi sayt darhol yangilanadi. Vercel Blob dagi PDF ham o‘chiriladi.`
       : `«${label}» qoralamadan olib tashlansinmi?\n\n(Sayt hali saqlanmagan — serverdagi ma’lumot o‘zgarmaydi.)`;
@@ -576,7 +576,7 @@ export const Builder = () => {
     }
     setPublishModal(prev => ({ ...prev, isPublishing: true }));
     try {
-      const slugNorm = publishModal.slug.trim().toUpperCase();
+      const slugNorm = String(publishModal.slug || '').trim().toUpperCase();
       const response = await fetch('/api/site-save', {
         method: 'POST',
         headers: {
@@ -642,7 +642,7 @@ export const Builder = () => {
 
   const publishQrImageSettings = () => {
     const qs = siteData.qrStyle || defaultQrStyle;
-    const logo = (qs.logoUrl || '').trim();
+    const logo = String(qs.logoUrl || '').trim();
     const sz = qs.size || 256;
     const pct = (qs.logoSize ?? 22) / 100;
     if (!logo) return undefined;
@@ -1374,7 +1374,7 @@ export const Builder = () => {
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
                           <input
                             type="color"
-                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            value={(section.data.color && String(section.data.color).trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
                             onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
                             title="Tugma matni rangi"
                             style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
@@ -1450,7 +1450,7 @@ export const Builder = () => {
                             <div className="flex items-center gap-2" style={{ flex: '1 1 140px' }}>
                               <input
                                 type="color"
-                                value={(section.data.color && section.data.color.trim()) ? section.data.color : siteData.globalStyle.textColor}
+                                value={(section.data.color && String(section.data.color).trim()) ? section.data.color : siteData.globalStyle.textColor}
                                 onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
                                 title="Matn rangi"
                                 style={{ width: '40px', height: '36px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
@@ -1518,7 +1518,7 @@ export const Builder = () => {
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
                           <input
                             type="color"
-                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            value={(section.data.color && String(section.data.color).trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
                             onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
                             title="Tugma matni rangi"
                             style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
@@ -1957,7 +1957,7 @@ export const Builder = () => {
                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tugma matni rangi:</span>
                           <input
                             type="color"
-                            value={(section.data.color && section.data.color.trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
+                            value={(section.data.color && String(section.data.color).trim()) ? section.data.color : (siteData.globalStyle.buttonStyle === 'filled' ? '#ffffff' : siteData.globalStyle.textColor)}
                             onChange={(e) => updateSectionData(section.id, { ...section.data, color: e.target.value })}
                             title="Tugma matni rangi"
                             style={{ width: '36px', height: '32px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
