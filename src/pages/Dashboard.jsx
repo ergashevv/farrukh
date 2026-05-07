@@ -82,7 +82,7 @@ export const Dashboard = () => {
       >
         <div className="flex items-center gap-2">
           <QrCode size={24} />
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Mening saytlarim</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Barcha saytlar</h1>
         </div>
         <button type="button" className="btn btn-secondary" onClick={logout}>
           <LogOut size={16} /> Chiqish
@@ -92,7 +92,7 @@ export const Dashboard = () => {
       <main style={{ width: '100%', maxWidth: '720px', margin: '0 auto', padding: '1.5rem' }}>
         <div className="flex justify-between items-center gap-4" style={{ marginBottom: '1.25rem', flexWrap: 'wrap' }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Saqlangan saytlar: {sites.length}. Tahrirlash yoki o‘chirish mumkin.
+            Ro‘yxatdagi saytlar: {sites.length}. Tahrirlash yoki o‘chirish mumkin.
           </p>
           <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
             <Plus size={16} /> Yangi sayt
