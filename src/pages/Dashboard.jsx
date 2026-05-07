@@ -4,8 +4,6 @@ import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink } from 'lucide-react
 import { getStoredAuth, clearAuth } from '../auth';
 import { SitePreviewThumb } from '../components/SitePreviewThumb';
 
-const MAX = 10;
-
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [sites, setSites] = useState([]);
@@ -76,8 +74,6 @@ export const Dashboard = () => {
 
   if (!auth?.token) return null;
 
-  const canCreate = sites.length < MAX;
-
   return (
     <div className="app-container" style={{ flexDirection: 'column', height: 'auto', minHeight: '100vh', overflow: 'auto' }}>
       <header
@@ -96,17 +92,11 @@ export const Dashboard = () => {
       <main style={{ width: '100%', maxWidth: '720px', margin: '0 auto', padding: '1.5rem' }}>
         <div className="flex justify-between items-center gap-4" style={{ marginBottom: '1.25rem', flexWrap: 'wrap' }}>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Saqlangan: {sites.length} / {MAX}. Tahrirlash yoki o‘chirish mumkin.
+            Saqlangan saytlar: {sites.length}. Tahrirlash yoki o‘chirish mumkin.
           </p>
-          {canCreate ? (
-            <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
-              <Plus size={16} /> Yangi sayt
-            </Link>
-          ) : (
-            <span className="btn btn-secondary" style={{ opacity: 0.7, cursor: 'not-allowed' }} title="Limit">
-              Limit ({MAX})
-            </span>
-          )}
+          <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+            <Plus size={16} /> Yangi sayt
+          </Link>
         </div>
 
         {loading && <p style={{ color: 'var(--text-muted)' }}>Yuklanmoqda...</p>}
