@@ -13,6 +13,7 @@ import { SitePreviewThumb } from '../components/SitePreviewThumb';
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [sites, setSites] = useState([]);
+  const [converts, setConverts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [isConvertOpen, setIsConvertOpen] = useState(false);
@@ -39,7 +40,10 @@ export const Dashboard = () => {
         });
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || 'Xato');
-        if (!cancelled) setSites(j.sites || []);
+        if (!cancelled) {
+          setSites(j.sites || []);
+          setConverts(j.converts || []);
+        }
       } catch (e) {
         if (!cancelled) setErr(e.message || 'Yuklash muvaffaqiyatsiz');
       } finally {
@@ -179,6 +183,35 @@ export const Dashboard = () => {
             </li>
           ))}
         </ul>
+
+        {converts.length > 0 && (
+          <div style={{ marginTop: '3rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '4px', height: '24px', background: '#f59e0b', borderRadius: '2px' }}></div>
+              Yaratilgan QR kodlar tarixi
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+              {converts.map((c) => (
+                <div key={c.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid #f1f5f9' }}>
+                  <div style={{ width: '50px', height: '50px', background: '#f8fafc', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <QRCodeSVG value={c.result_url} size={40} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {c.content.substring(0, 30)}{c.content.length > 30 ? '...' : ''}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                      {c.type.toUpperCase()} • {new Date(c.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <a href={c.result_url} target="_blank" rel="noreferrer" style={{ color: '#64748b' }}>
+                    <ExternalLink size={16} />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -438,6 +471,18 @@ const ConvertModal = ({ onClose }) => {
     if (finalContent) {
       setResultUrl(finalContent);
       setStep('result');
+      
+      // Bazaga saqlash
+      try {
+        const auth = getStoredAuth();
+        fetch('/api/save-convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth?.token}` },
+          body: JSON.stringify({ type: mode, content: finalContent, resultUrl: finalContent }),
+        });
+      } catch (e) {
+        console.error('Save convert failed:', e);
+      }
     }
   };
 
