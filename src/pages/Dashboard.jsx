@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink, Link as LinkIcon, Image as ImageIcon, 
   FileText, Wifi, AlignLeft, ChevronLeft, MessageCircle, Camera, Video, MapPin, Smartphone, 
-  ArrowRight, Send, Facebook, Music, Linkedin, Twitter, PhoneCall, MessageSquare, Mail, 
+  ArrowRight, Send, Globe, Music, Briefcase, PhoneCall, MessageSquare, Mail, 
   Layout, Volume2, Coins, Calendar, User, ShoppingBag
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -219,10 +219,10 @@ const ConvertModal = ({ onClose }) => {
     { id: 'telegram', label: 'Telegram', icon: <Send size={20} />, color: '#0088cc', desc: 'Profil yoki guruh havolasi' },
     { id: 'instagram', label: 'Instagram', icon: <Camera size={20} />, color: '#d946ef', desc: 'Profil yoki postga havola' },
     { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e', desc: 'To‘g‘ridan-to‘g‘ri chatga o‘tish' },
-    { id: 'facebook', label: 'Facebook', icon: <Facebook size={20} />, color: '#1877f2', desc: 'Sahifa yoki profil' },
+    { id: 'facebook', label: 'Facebook', icon: <Globe size={20} />, color: '#1877f2', desc: 'Sahifa yoki profil' },
     { id: 'tiktok', label: 'TikTok', icon: <Music size={20} />, color: '#000000', desc: 'Video yoki profil' },
-    { id: 'linkedin', label: 'LinkedIn', icon: <Linkedin size={20} />, color: '#0a66c2', desc: 'Professional profil' },
-    { id: 'twitter', label: 'Twitter (X)', icon: <Twitter size={20} />, color: '#000000', desc: 'X profili yoki post' },
+    { id: 'linkedin', label: 'LinkedIn', icon: <Briefcase size={20} />, color: '#0a66c2', desc: 'Professional profil' },
+    { id: 'twitter', label: 'Twitter (X)', icon: <Send size={20} />, color: '#000000', desc: 'X profili yoki post' },
     { id: 'youtube', label: 'YouTube', icon: <Video size={20} />, color: '#ff0000', desc: 'Video yoki kanal havolasi' },
     { id: 'vcard', label: 'Vizitka (vCard)', icon: <User size={20} />, color: '#ec4899', desc: 'Kontakt ma’lumotlarini saqlash' },
     { id: 'call', label: 'Telefon', icon: <PhoneCall size={20} />, color: '#4ade80', desc: 'Raqamga qo‘ng‘iroq qilish' },
