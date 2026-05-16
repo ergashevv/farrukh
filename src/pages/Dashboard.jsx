@@ -191,16 +191,16 @@ const ConvertModal = ({ onClose }) => {
   const [error, setError] = useState('');
 
   const MODES = [
-    { id: 'url', label: 'Havola / URL', icon: <LinkIcon size={20} />, color: '#3b82f6' },
-    { id: 'image', label: 'Tasvir (Rasm)', icon: <ImageIcon size={20} />, color: '#ec4899' },
-    { id: 'pdf', label: 'PDF Fayl', icon: <FileText size={20} />, color: '#ef4444' },
-    { id: 'text', label: 'Matn', icon: <AlignLeft size={20} />, color: '#6b7280' },
-    { id: 'wifi', label: 'Wi-Fi', icon: <Wifi size={20} />, color: '#10b981' },
-    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e' },
-    { id: 'instagram', label: 'Instagram', icon: <Camera size={20} />, color: '#d946ef' },
-    { id: 'youtube', label: 'YouTube', icon: <Video size={20} />, color: '#ff0000' },
-    { id: 'maps', label: 'Xarita (Maps)', icon: <MapPin size={20} />, color: '#f59e0b' },
-    { id: 'appstore', label: 'App Store', icon: <Smartphone size={20} />, color: '#0ea5e9' },
+    { id: 'url', label: 'Havola / URL', icon: <LinkIcon size={20} />, color: '#3b82f6', desc: 'Veb-sayt yoki ijtimoiy tarmoq linklari' },
+    { id: 'image', label: 'Tasvir (Rasm)', icon: <ImageIcon size={20} />, color: '#ec4899', desc: 'JPEG, PNG yoki WebP formatidagi rasmlar' },
+    { id: 'pdf', label: 'PDF Fayl', icon: <FileText size={20} />, color: '#ef4444', desc: 'Hujjatlarni QR kod orqali ulashish' },
+    { id: 'text', label: 'Matn', icon: <AlignLeft size={20} />, color: '#6b7280', desc: 'Xabar, eslatma yoki oddiy matn' },
+    { id: 'wifi', label: 'Wi-Fi', icon: <Wifi size={20} />, color: '#10b981', desc: 'Tarmoqqa parolsiz ulanish imkoniyati' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e', desc: 'To‘g‘ridan-to‘g‘ri chatga o‘tish' },
+    { id: 'instagram', label: 'Instagram', icon: <Camera size={20} />, color: '#d946ef', desc: 'Profil yoki postga havola' },
+    { id: 'youtube', label: 'YouTube', icon: <Video size={20} />, color: '#ff0000', desc: 'Video yoki kanal havolasi' },
+    { id: 'maps', label: 'Xarita (Maps)', icon: <MapPin size={20} />, color: '#f59e0b', desc: 'Manzil yoki joylashuv koordinatalari' },
+    { id: 'appstore', label: 'App Store', icon: <Smartphone size={20} />, color: '#0ea5e9', desc: 'Mobil ilovalarni yuklab olish' },
   ];
 
   const handleModeSelect = (m) => {
@@ -366,7 +366,10 @@ const ConvertModal = ({ onClose }) => {
                 <div style={{ color: m.color, background: `${m.color}10`, padding: '0.5rem', borderRadius: '0.5rem', display: 'flex' }}>
                   {m.icon}
                 </div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#18181b' }}>{m.label}</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#18181b' }}>{m.label}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#71717a', marginTop: '1px' }}>{m.desc}</div>
+                </div>
               </div>
               <ArrowRight size={16} style={{ color: '#a1a1aa' }} />
             </button>
@@ -386,96 +389,125 @@ const ConvertModal = ({ onClose }) => {
             <ChevronLeft size={16} /> Orqaga
           </button>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <div style={{ color: currentMode?.color, background: `${currentMode?.color}10`, padding: '0.75rem', borderRadius: '50%', display: 'flex' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', padding: '1rem', background: `${currentMode?.color}08`, borderRadius: '1rem' }}>
+            <div style={{ color: currentMode?.color, background: `${currentMode?.color}15`, padding: '0.875rem', borderRadius: '50%', display: 'flex' }}>
               {currentMode?.icon}
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-              {currentMode?.label}
-            </h3>
+            <div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#18181b' }}>
+                {currentMode?.label}
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: '#71717a', marginTop: '2px' }}>{currentMode?.desc}</p>
+            </div>
           </div>
 
-          {(mode === 'url' || mode === 'youtube' || mode === 'appstore') && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#3f3f46', fontWeight: 500 }}>Manzilni kiriting</label>
-              <input 
-                type="text" className="input" placeholder="https://..." 
-                value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%' }}
-              />
-            </div>
-          )}
+          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9', marginBottom: '1.5rem' }}>
+            {(mode === 'url' || mode === 'youtube' || mode === 'appstore') && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Manzilni kiriting</label>
+                <input 
+                  type="text" className="input" placeholder="https://..." 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                />
+              </div>
+            )}
 
-          {mode === 'whatsapp' && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#3f3f46', fontWeight: 500 }}>Telefon raqami</label>
-              <input 
-                type="text" className="input" placeholder="+998901234567" 
-                value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%' }}
-              />
-            </div>
-          )}
+            {mode === 'whatsapp' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Telefon raqami</label>
+                <input 
+                  type="text" className="input" placeholder="+998901234567" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                />
+              </div>
+            )}
 
-          {mode === 'instagram' && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#3f3f46', fontWeight: 500 }}>Instagram username</label>
-              <input 
-                type="text" className="input" placeholder="@username" 
-                value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%' }}
-              />
-            </div>
-          )}
+            {mode === 'instagram' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Instagram username</label>
+                <input 
+                  type="text" className="input" placeholder="@username" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                />
+              </div>
+            )}
 
-          {mode === 'maps' && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: '#3f3f46', fontWeight: 500 }}>Manzil yoki joy nomi</label>
-              <input 
-                type="text" className="input" placeholder="Toshkent, Amir Temur ko‘chasi" 
-                value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%' }}
-              />
-            </div>
-          )}
+            {mode === 'maps' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Manzil yoki joy nomi</label>
+                <input 
+                  type="text" className="input" placeholder="Toshkent, Amir Temur ko‘chasi" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                />
+              </div>
+            )}
 
-          {mode === 'text' && (
-            <textarea 
-              className="input" placeholder="Matnni kiriting..." rows={4}
-              value={inputText} onChange={(e) => setInputText(e.target.value)} style={{ width: '100%', marginBottom: '1rem', resize: 'none' }}
-            />
-          )}
+            {mode === 'text' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Matnni kiriting</label>
+                <textarea 
+                  className="input" placeholder="Bu yerga xabar yoki matnni yozing..." rows={4}
+                  value={inputText} onChange={(e) => setInputText(e.target.value)} style={{ width: '100%', background: 'white', resize: 'none' }}
+                />
+              </div>
+            )}
 
-          {mode === 'wifi' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
-              <input type="text" className="input" placeholder="Tarmoq nomi (SSID)" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} />
-              <input type="text" className="input" placeholder="Parol" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} />
-              <select className="input" value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})}>
-                <option value="WPA">WPA/WPA2</option>
-                <option value="WEP">WEP</option>
-                <option value="nopass">Parolsiz</option>
-              </select>
-            </div>
-          )}
+            {mode === 'wifi' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Tarmoq nomi (SSID)</label>
+                  <input type="text" className="input" placeholder="WiFi nomi" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} style={{ width: '100%', background: 'white' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Parol</label>
+                  <input type="text" className="input" placeholder="********" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} style={{ width: '100%', background: 'white' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Xavfsizlik turi</label>
+                  <select className="input" value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})} style={{ width: '100%', background: 'white' }}>
+                    <option value="WPA">WPA/WPA2</option>
+                    <option value="WEP">WEP</option>
+                    <option value="nopass">Parolsiz (Open)</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
-          {(mode === 'image' || mode === 'pdf') && (
-            <div style={{ marginBottom: '1rem' }}>
+            {(mode === 'image' || mode === 'pdf') && (
               <div 
                 onClick={() => document.getElementById('file-upload').click()}
                 style={{ 
-                  border: '2px dashed #e4e4e7', borderRadius: '0.75rem', padding: '2rem', textAlign: 'center', 
-                  cursor: 'pointer', background: '#f8fafc' 
+                  border: '2px dashed #cbd5e1', borderRadius: '1rem', padding: '2rem', textAlign: 'center', 
+                  cursor: 'pointer', background: 'white', transition: 'all 0.2s'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = currentMode?.color; e.currentTarget.style.background = `${currentMode?.color}05`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = 'white'; }}
               >
                 <input id="file-upload" type="file" hidden accept={mode === 'image' ? "image/*" : ".pdf"} onChange={handleFileChange} />
-                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                <div style={{ color: currentMode?.color, marginBottom: '0.75rem' }}>
                   {file ? <FileText size={32} style={{ margin: '0 auto' }} /> : (mode === 'image' ? <ImageIcon size={32} style={{ margin: '0 auto' }} /> : <FileText size={32} style={{ margin: '0 auto' }} />)}
                 </div>
-                <div style={{ fontWeight: 500 }}>{file ? file.name : (mode === 'image' ? 'Rasmni tanlang' : 'PDF faylni tanlang')}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Maksimal hajm: 5MB</div>
+                <div style={{ fontWeight: 600, color: '#1e293b' }}>{file ? file.name : (mode === 'image' ? 'Rasmni tanlang' : 'PDF faylni tanlang')}</div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>Fayl hajmi 5MB dan oshmasligi kerak</div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
 
           {error && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
 
-          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleConvert} disabled={uploading}>
+          <button 
+            className="btn btn-primary" 
+            style={{ 
+              width: '100%', padding: '1rem', borderRadius: '0.75rem', fontSize: '1rem', fontWeight: 700,
+              background: `linear-gradient(135deg, ${currentMode?.color || '#18181b'}, #000)`,
+              border: 'none', boxShadow: `0 4px 15px ${currentMode?.color}40`, transition: 'transform 0.2s'
+            }} 
+            onClick={handleConvert} 
+            disabled={uploading}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
             {uploading ? 'Yuklanmoqda...' : 'QR kod yaratish'}
           </button>
         </div>
