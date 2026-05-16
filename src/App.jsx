@@ -5,6 +5,7 @@ import { PreviewPage } from './pages/PreviewPage';
 import { LivePage } from './pages/LivePage';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
+import { History } from './pages/History';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<AuthPage />} />
         <Route path="/" element={<Dashboard />} />
+        <Route path="/history" element={<History />} />
         <Route path="/builder" element={<Builder />} />
         <Route path="/preview" element={<PreviewPage />} />
         <Route path="/:slug" element={<LivePage />} />
