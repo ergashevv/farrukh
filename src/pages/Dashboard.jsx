@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink, Link as LinkIcon, Image as ImageIcon, FileText, Wifi, AlignLeft, ChevronLeft, MessageCircle, Instagram, Youtube, MapPin, Smartphone, ArrowRight } from 'lucide-react';
+import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink, Link as LinkIcon, Image as ImageIcon, FileText, Wifi, AlignLeft, ChevronLeft, MessageCircle, Camera, Video, MapPin, Smartphone, ArrowRight } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getStoredAuth, clearAuth } from '../auth';
 import { SitePreviewThumb } from '../components/SitePreviewThumb';
@@ -197,8 +197,8 @@ const ConvertModal = ({ onClose }) => {
     { id: 'text', label: 'Matn', icon: <AlignLeft size={20} />, color: '#6b7280' },
     { id: 'wifi', label: 'Wi-Fi', icon: <Wifi size={20} />, color: '#10b981' },
     { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e' },
-    { id: 'instagram', label: 'Instagram', icon: <Instagram size={20} />, color: '#d946ef' },
-    { id: 'youtube', label: 'YouTube', icon: <Youtube size={20} />, color: '#ff0000' },
+    { id: 'instagram', label: 'Instagram', icon: <Camera size={20} />, color: '#d946ef' },
+    { id: 'youtube', label: 'YouTube', icon: <Video size={20} />, color: '#ff0000' },
     { id: 'maps', label: 'Xarita (Maps)', icon: <MapPin size={20} />, color: '#f59e0b' },
     { id: 'appstore', label: 'App Store', icon: <Smartphone size={20} />, color: '#0ea5e9' },
   ];
