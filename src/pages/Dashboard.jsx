@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { getStoredAuth, clearAuth } from '../auth';
 import { SitePreviewThumb } from '../components/SitePreviewThumb';
 
@@ -9,6 +10,7 @@ export const Dashboard = () => {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [isConvertOpen, setIsConvertOpen] = useState(false);
 
   const t = (v) => {
     if (!v) return '';
@@ -94,10 +96,22 @@ export const Dashboard = () => {
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             Ro‘yxatdagi saytlar: {sites.length}. Tahrirlash yoki o‘chirish mumkin.
           </p>
-          <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
-            <Plus size={16} /> Yangi sayt
-          </Link>
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              onClick={() => setIsConvertOpen(true)}
+            >
+              <QrCode size={16} /> Konvertatsiya
+            </button>
+            <Link to="/builder?new=1" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+              <Plus size={16} /> Yangi sayt
+            </Link>
+          </div>
         </div>
+
+        {isConvertOpen && <ConvertModal onClose={() => setIsConvertOpen(false)} />}
 
         {loading && <p style={{ color: 'var(--text-muted)' }}>Yuklanmoqda...</p>}
         {err && <p style={{ color: '#dc2626' }}>{err}</p>}
@@ -161,6 +175,179 @@ export const Dashboard = () => {
           ))}
         </ul>
       </main>
+    </div>
+  );
+};
+
+const ConvertModal = ({ onClose }) => {
+  const [type, setType] = useState('url'); // 'url' | 'file'
+  const [inputUrl, setInputUrl] = useState('');
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [resultUrl, setResultUrl] = useState('');
+  const [error, setError] = useState('');
+
+  const handleFileChange = (e) => {
+    const f = e.target.files[0];
+    if (f) {
+      if (f.size > 5 * 1024 * 1024) {
+        alert('Fayl hajmi 5MB dan oshmasligi kerak');
+        return;
+      }
+      setFile(f);
+      setResultUrl('');
+    }
+  };
+
+  const handleConvert = async () => {
+    setError('');
+    if (type === 'url') {
+      if (!inputUrl.trim()) {
+        setError('Havolani kiriting');
+        return;
+      }
+      setResultUrl(inputUrl.trim());
+    } else {
+      if (!file) {
+        setError('Faylni tanlang');
+        return;
+      }
+      setUploading(true);
+      try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          const dataUrl = reader.result;
+          const auth = getStoredAuth();
+          const res = await fetch('/api/upload-blob', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth?.token}`,
+            },
+            body: JSON.stringify({ dataUrl, kind: 'convert' }),
+          });
+          const j = await res.json();
+          if (!res.ok) throw new Error(j.error || 'Yuklashda xato');
+          setResultUrl(j.url);
+          setUploading(false);
+        };
+        reader.onerror = () => {
+          throw new Error('Faylni o‘qishda xato');
+        };
+      } catch (e) {
+        setError(e.message);
+        setUploading(false);
+      }
+    }
+  };
+
+  const downloadQR = () => {
+    const svg = document.getElementById('qr-result-svg');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = 'qr-code.png';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', zIndex: 1000, padding: '1rem'
+    }}>
+      <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '1.5rem', position: 'relative' }}>
+        <button 
+          onClick={onClose}
+          style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }}
+        >
+          ×
+        </button>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.25rem' }}>QR kodga o‘tkazish</h2>
+        
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#f4f4f5', padding: '0.25rem', borderRadius: '0.5rem' }}>
+          <button 
+            className={`btn ${type === 'url' ? 'btn-primary' : ''}`}
+            style={{ flex: 1, border: 'none', background: type === 'url' ? '' : 'transparent', color: type === 'url' ? '' : 'var(--text-secondary)' }}
+            onClick={() => { setType('url'); setResultUrl(''); }}
+          >
+            Havola
+          </button>
+          <button 
+            className={`btn ${type === 'file' ? 'btn-primary' : ''}`}
+            style={{ flex: 1, border: 'none', background: type === 'file' ? '' : 'transparent', color: type === 'file' ? '' : 'var(--text-secondary)' }}
+            onClick={() => { setType('file'); setResultUrl(''); }}
+          >
+            Fayl
+          </button>
+        </div>
+
+        {type === 'url' ? (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Veb-sayt manzili (URL)</label>
+            <input 
+              type="text" 
+              className="input" 
+              placeholder="https://example.com" 
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              style={{ width: '100%' }}
+            />
+          </div>
+        ) : (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Fayl yuklash (JPEG, PNG, WebP)</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ width: '100%', fontSize: '0.875rem' }}
+            />
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Maksimal hajm: 5MB</p>
+          </div>
+        )}
+
+        {error && <p style={{ color: '#dc2626', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}
+
+        <button 
+          className="btn btn-primary" 
+          style={{ width: '100%', marginBottom: '1.5rem' }}
+          onClick={handleConvert}
+          disabled={uploading}
+        >
+          {uploading ? 'Yuklanmoqda...' : 'QR kod yaratish'}
+        </button>
+
+        {resultUrl && (
+          <div style={{ textAlign: 'center', background: '#f8fafc', padding: '1.5rem', borderRadius: '0.75rem' }}>
+            <div style={{ background: 'white', padding: '1rem', display: 'inline-block', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '1rem' }}>
+              <QRCodeSVG id="qr-result-svg" value={resultUrl} size={200} />
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', wordBreak: 'break-all' }}>
+              {resultUrl}
+            </div>
+            <button className="btn btn-secondary" style={{ width: '100%' }} onClick={downloadQR}>
+              QR kodni yuklab olish (.png)
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
