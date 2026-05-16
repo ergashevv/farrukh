@@ -189,9 +189,9 @@ const ConvertModal = ({ onClose }) => {
   const [mode, setMode] = useState(null); // 'url' | 'image' | 'pdf' | 'wifi' | 'text'
   const [inputUrl, setInputUrl] = useState('');
   const [inputText, setInputText] = useState('');
-  const [vcard, setVcard] = useState({ firstName: '', lastName: '', phone: '', email: '', org: '', job: '', url: '' });
+  const [vcard, setVcard] = useState({ firstName: '', lastName: '', phone: '+998', email: '', org: '', job: '', url: '' });
   const [emailData, setEmailData] = useState({ to: '', subject: '', body: '' });
-  const [smsData, setSmsData] = useState({ phone: '', message: '' });
+  const [smsData, setSmsData] = useState({ phone: '+998', message: '' });
   const [crypto, setCrypto] = useState({ currency: 'bitcoin', address: '', amount: '' });
   const [event, setEvent] = useState({ title: '', location: '', start: '', end: '', desc: '' });
   const [wifi, setWifi] = useState({ ssid: '', password: '', security: 'WPA' });
@@ -259,6 +259,11 @@ const ConvertModal = ({ onClose }) => {
     setStep('input');
     setError('');
     setResultUrl('');
+    if (m === 'whatsapp' || m === 'call') {
+      setInputUrl('+998');
+    } else {
+      setInputUrl('');
+    }
   };
 
   const handleFileChange = (e) => {
