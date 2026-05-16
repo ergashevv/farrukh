@@ -211,17 +211,6 @@ const ConvertModal = ({ onClose }) => {
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
   };
 
-  const handleInputFocus = (e) => {
-    e.target.style.borderColor = currentMode?.color || '#f59e0b';
-    e.target.style.boxShadow = `0 0 0 4px ${currentMode?.color || '#f59e0b'}15`;
-    e.target.style.transform = 'translateY(-1px)';
-  };
-
-  const handleInputBlur = (e) => {
-    e.target.style.borderColor = '#e2e8f0';
-    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
-    e.target.style.transform = 'translateY(0)';
-  };
   const [resultUrl, setResultUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -250,6 +239,20 @@ const ConvertModal = ({ onClose }) => {
     { id: 'crypto', label: 'Kripto', icon: <Coins size={20} />, color: '#f7931a', desc: 'BTC, ETH to‘lovlari' },
     { id: 'calendar', label: 'Tadbir', icon: <Calendar size={20} />, color: '#3b82f6', desc: 'Tadbirni kalendarga saqlash' },
   ];
+
+  const currentMode = MODES.find(m => m.id === mode);
+
+  const handleInputFocus = (e) => {
+    e.target.style.borderColor = currentMode?.color || '#f59e0b';
+    e.target.style.boxShadow = `0 0 0 4px ${currentMode?.color || '#f59e0b'}15`;
+    e.target.style.transform = 'translateY(-1px)';
+  };
+
+  const handleInputBlur = (e) => {
+    e.target.style.borderColor = '#e2e8f0';
+    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    e.target.style.transform = 'translateY(0)';
+  };
 
   const handleModeSelect = (m) => {
     setMode(m);
@@ -592,6 +595,40 @@ const ConvertModal = ({ onClose }) => {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>HAMYON MANZILI</label>
                   <input type="text" value={crypto.address} onChange={e => setCrypto({...crypto, address: e.target.value})} style={inputStyle} />
+                </div>
+              </div>
+            )}
+
+            {mode === 'text' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>MATNNI KIRITING</label>
+                <textarea 
+                  placeholder="Bu yerga xabar yoki matnni yozing..." rows={4}
+                  value={inputText} onChange={(e) => setInputText(e.target.value)} 
+                  style={{ ...inputStyle, resize: 'none' }} onFocus={handleInputFocus} onBlur={handleInputBlur}
+                />
+              </div>
+            )}
+
+            {mode === 'wifi' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>TARMOQ NOMI (SSID)</label>
+                  <input type="text" placeholder="WiFi nomi" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>PAROL</label>
+                    <input type="text" placeholder="********" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>XAVFSIZLIK</label>
+                    <select value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}>
+                      <option value="WPA">WPA/WPA2</option>
+                      <option value="WEP">WEP</option>
+                      <option value="nopass">Parolsiz</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
