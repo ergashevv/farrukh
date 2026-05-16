@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink, Link as LinkIcon, Image as ImageIcon, FileText, Wifi, AlignLeft, ChevronLeft, MessageCircle, Camera, Video, MapPin, Smartphone, ArrowRight } from 'lucide-react';
+import { 
+  QrCode, Plus, Pencil, Trash2, LogOut, ExternalLink, Link as LinkIcon, Image as ImageIcon, 
+  FileText, Wifi, AlignLeft, ChevronLeft, MessageCircle, Camera, Video, MapPin, Smartphone, 
+  ArrowRight, Send, Facebook, Music, Linkedin, Twitter, PhoneCall, MessageSquare, Mail, 
+  Layout, Volume2, Coins, Calendar, User, ShoppingBag
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getStoredAuth, clearAuth } from '../auth';
 import { SitePreviewThumb } from '../components/SitePreviewThumb';
@@ -184,6 +189,11 @@ const ConvertModal = ({ onClose }) => {
   const [mode, setMode] = useState(null); // 'url' | 'image' | 'pdf' | 'wifi' | 'text'
   const [inputUrl, setInputUrl] = useState('');
   const [inputText, setInputText] = useState('');
+  const [vcard, setVcard] = useState({ firstName: '', lastName: '', phone: '', email: '', org: '', job: '', url: '' });
+  const [emailData, setEmailData] = useState({ to: '', subject: '', body: '' });
+  const [smsData, setSmsData] = useState({ phone: '', message: '' });
+  const [crypto, setCrypto] = useState({ currency: 'bitcoin', address: '', amount: '' });
+  const [event, setEvent] = useState({ title: '', location: '', start: '', end: '', desc: '' });
   const [wifi, setWifi] = useState({ ssid: '', password: '', security: 'WPA' });
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -217,15 +227,28 @@ const ConvertModal = ({ onClose }) => {
 
   const MODES = [
     { id: 'url', label: 'Havola / URL', icon: <LinkIcon size={20} />, color: '#3b82f6', desc: 'Veb-sayt yoki ijtimoiy tarmoq linklari' },
-    { id: 'image', label: 'Tasvir (Rasm)', icon: <ImageIcon size={20} />, color: '#ec4899', desc: 'JPEG, PNG yoki WebP formatidagi rasmlar' },
-    { id: 'pdf', label: 'PDF Fayl', icon: <FileText size={20} />, color: '#ef4444', desc: 'Hujjatlarni QR kod orqali ulashish' },
-    { id: 'text', label: 'Matn', icon: <AlignLeft size={20} />, color: '#6b7280', desc: 'Xabar, eslatma yoki oddiy matn' },
-    { id: 'wifi', label: 'Wi-Fi', icon: <Wifi size={20} />, color: '#10b981', desc: 'Tarmoqqa parolsiz ulanish imkoniyati' },
-    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e', desc: 'To‘g‘ridan-to‘g‘ri chatga o‘tish' },
+    { id: 'telegram', label: 'Telegram', icon: <Send size={20} />, color: '#0088cc', desc: 'Profil yoki guruh havolasi' },
     { id: 'instagram', label: 'Instagram', icon: <Camera size={20} />, color: '#d946ef', desc: 'Profil yoki postga havola' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={20} />, color: '#22c55e', desc: 'To‘g‘ridan-to‘g‘ri chatga o‘tish' },
+    { id: 'facebook', label: 'Facebook', icon: <Facebook size={20} />, color: '#1877f2', desc: 'Sahifa yoki profil' },
+    { id: 'tiktok', label: 'TikTok', icon: <Music size={20} />, color: '#000000', desc: 'Video yoki profil' },
+    { id: 'linkedin', label: 'LinkedIn', icon: <Linkedin size={20} />, color: '#0a66c2', desc: 'Professional profil' },
+    { id: 'twitter', label: 'Twitter (X)', icon: <Twitter size={20} />, color: '#000000', desc: 'X profili yoki post' },
     { id: 'youtube', label: 'YouTube', icon: <Video size={20} />, color: '#ff0000', desc: 'Video yoki kanal havolasi' },
+    { id: 'vcard', label: 'Vizitka (vCard)', icon: <User size={20} />, color: '#ec4899', desc: 'Kontakt ma’lumotlarini saqlash' },
+    { id: 'call', label: 'Telefon', icon: <PhoneCall size={20} />, color: '#4ade80', desc: 'Raqamga qo‘ng‘iroq qilish' },
+    { id: 'sms', label: 'SMS Xabar', icon: <MessageSquare size={20} />, color: '#60a5fa', desc: 'Oldindan yozilgan SMS yuborish' },
+    { id: 'email', label: 'E-mail', icon: <Mail size={20} />, color: '#ea4335', desc: 'Xat yuborish (Mavzu va matn)' },
+    { id: 'pdf', label: 'PDF Fayl', icon: <FileText size={20} />, color: '#ef4444', desc: 'Hujjatlarni QR kod orqali ulashish' },
+    { id: 'image', label: 'Tasvir (Rasm)', icon: <ImageIcon size={20} />, color: '#ec4899', desc: 'JPEG, PNG yoki WebP formatidagi rasmlar' },
+    { id: 'audio', label: 'Audio / MP3', icon: <Volume2 size={20} />, color: '#8b5cf6', desc: 'Musiqa faylini yuklash' },
+    { id: 'wifi', label: 'Wi-Fi', icon: <Wifi size={20} />, color: '#10b981', desc: 'Tarmoqqa parolsiz ulanish imkoniyati' },
+    { id: 'text', label: 'Matn', icon: <AlignLeft size={20} />, color: '#6b7280', desc: 'Xabar, eslatma yoki oddiy matn' },
     { id: 'maps', label: 'Xarita (Maps)', icon: <MapPin size={20} />, color: '#f59e0b', desc: 'Manzil yoki joylashuv koordinatalari' },
-    { id: 'appstore', label: 'App Store', icon: <Smartphone size={20} />, color: '#0ea5e9', desc: 'Mobil ilovalarni yuklab olish' },
+    { id: 'appstore', label: 'Ilovalar', icon: <ShoppingBag size={20} />, color: '#0ea5e9', desc: 'Play Market yoki App Store' },
+    { id: 'spotify', label: 'Spotify', icon: <Layout size={20} />, color: '#1db954', desc: 'Musiqa yoki pleylist' },
+    { id: 'crypto', label: 'Kripto', icon: <Coins size={20} />, color: '#f7931a', desc: 'BTC, ETH to‘lovlari' },
+    { id: 'calendar', label: 'Tadbir', icon: <Calendar size={20} />, color: '#3b82f6', desc: 'Tadbirni kalendarga saqlash' },
   ];
 
   const handleModeSelect = (m) => {
@@ -280,6 +303,67 @@ const ConvertModal = ({ onClose }) => {
     } else if (mode === 'text') {
       if (!inputText.trim()) return setError('Matn kiriting');
       finalContent = inputText.trim();
+    } else if (mode === 'telegram') {
+      if (!inputUrl.trim()) return setError('Username kiriting');
+      const user = inputUrl.replace('@', '').replace('https://t.me/', '').trim();
+      finalContent = `https://t.me/${user}`;
+    } else if (mode === 'facebook') {
+      if (!inputUrl.trim()) return setError('Link yoki username kiriting');
+      finalContent = inputUrl.startsWith('http') ? inputUrl.trim() : `https://facebook.com/${inputUrl.trim()}`;
+    } else if (mode === 'tiktok') {
+      if (!inputUrl.trim()) return setError('Username kiriting');
+      const user = inputUrl.replace('@', '').trim();
+      finalContent = `https://tiktok.com/@${user}`;
+    } else if (mode === 'linkedin') {
+      if (!inputUrl.trim()) return setError('Profile link kiriting');
+      finalContent = inputUrl.startsWith('http') ? inputUrl.trim() : `https://linkedin.com/in/${inputUrl.trim()}`;
+    } else if (mode === 'twitter') {
+      if (!inputUrl.trim()) return setError('Username kiriting');
+      const user = inputUrl.replace('@', '').trim();
+      finalContent = `https://twitter.com/${user}`;
+    } else if (mode === 'call') {
+      if (!inputUrl.trim()) return setError('Telefon raqam kiriting');
+      finalContent = `tel:${inputUrl.replace(/\s/g, '')}`;
+    } else if (mode === 'sms') {
+      if (!smsData.phone.trim()) return setError('Raqam kiriting');
+      finalContent = `smsto:${smsData.phone.replace(/\s/g, '')}:${smsData.message}`;
+    } else if (mode === 'email') {
+      if (!emailData.to.trim()) return setError('Email manzilingizni kiriting');
+      finalContent = `mailto:${emailData.to}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+    } else if (mode === 'vcard') {
+      if (!vcard.firstName.trim()) return setError('Ism kiriting');
+      finalContent = `BEGIN:VCARD\nVERSION:3.0\nN:${vcard.lastName};${vcard.firstName};;;\nFN:${vcard.firstName} ${vcard.lastName}\nORG:${vcard.org}\nTITLE:${vcard.job}\nTEL;TYPE=CELL:${vcard.phone}\nEMAIL;TYPE=INTERNET:${vcard.email}\nURL:${vcard.url}\nEND:VCARD`;
+    } else if (mode === 'crypto') {
+      if (!crypto.address.trim()) return setError('Hamyon manzilini kiriting');
+      finalContent = `${crypto.currency}:${crypto.address}${crypto.amount ? `?amount=${crypto.amount}` : ''}`;
+    } else if (mode === 'calendar') {
+      if (!event.title.trim()) return setError('Tadbir nomini kiriting');
+      const s = event.start.replace(/[-:]/g, '');
+      const e = event.end.replace(/[-:]/g, '');
+      finalContent = `BEGIN:VEVENT\nSUMMARY:${event.title}\nLOCATION:${event.location}\nDESCRIPTION:${event.desc}\nDTSTART:${s}\nDTEND:${e}\nEND:VEVENT`;
+    } else if (mode === 'spotify') {
+      if (!inputUrl.trim()) return setError('Spotify linkini kiriting');
+      finalContent = inputUrl.trim();
+    } else if (mode === 'audio') {
+      if (!file) return setError('Audio fayl tanlang');
+      // Audio handleUploadBlob orqali yuklanadi
+      setUploading(true);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const auth = getStoredAuth();
+        const res = await fetch('/api/upload-blob', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth?.token}` },
+          body: JSON.stringify({ dataUrl: reader.result, kind: 'convert' }),
+        });
+        const j = await res.json();
+        if (!res.ok) throw new Error(j.error || 'Yuklashda xato');
+        setResultUrl(j.url);
+        setStep('result');
+        setUploading(false);
+      };
+      return;
     } else if (mode === 'wifi') {
       if (!wifi.ssid.trim()) return setError('Tarmoq nomini kiriting');
       finalContent = `WIFI:T:${wifi.security};S:${wifi.ssid};P:${wifi.password};;`;
@@ -427,87 +511,111 @@ const ConvertModal = ({ onClose }) => {
           </div>
 
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #eef2f6', marginBottom: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
-            {(mode === 'url' || mode === 'youtube' || mode === 'appstore') && (
+            {(mode === 'url' || mode === 'youtube' || mode === 'appstore' || mode === 'telegram' || mode === 'facebook' || mode === 'tiktok' || mode === 'linkedin' || mode === 'twitter' || mode === 'spotify' || mode === 'call') && (
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>
-                  {mode === 'url' ? 'HAVOLA / URL' : mode === 'youtube' ? 'YOUTUBE LINK' : 'APP STORE LINK'}
+                  {mode === 'call' ? 'TELEFON RAQAMI' : 'MA’LUMOTNI KIRITING'}
                 </label>
                 <input 
-                  type="text" placeholder="https://..." 
+                  type="text" placeholder={mode === 'call' ? '+998...' : 'Kiriting...'} 
                   value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
                   style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
-            {mode === 'whatsapp' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>TELEFON RAQAMI</label>
-                <input 
-                  type="text" placeholder="+998901234567" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
-                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
-                />
-              </div>
-            )}
-
-            {mode === 'instagram' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>INSTAGRAM USERNAME</label>
-                <input 
-                  type="text" placeholder="@username" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
-                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
-                />
-              </div>
-            )}
-
-            {mode === 'maps' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>MANZIL YOKI JOY NOMI</label>
-                <input 
-                  type="text" placeholder="Toshkent, Amir Temur ko‘chasi" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
-                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
-                />
-              </div>
-            )}
-
-            {mode === 'text' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>MATNNI KIRITING</label>
-                <textarea 
-                  placeholder="Bu yerga xabar yoki matnni yozing..." rows={4}
-                  value={inputText} onChange={(e) => setInputText(e.target.value)} 
-                  style={{ ...inputStyle, resize: 'none' }} onFocus={handleInputFocus} onBlur={handleInputBlur}
-                />
-              </div>
-            )}
-
-            {mode === 'wifi' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {mode === 'vcard' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>TARMOQ NOMI (SSID)</label>
-                  <input type="text" placeholder="WiFi nomi" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>ISM</label>
+                  <input type="text" value={vcard.firstName} onChange={e => setVcard({...vcard, firstName: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>FAMILIYA</label>
+                  <input type="text" value={vcard.lastName} onChange={e => setVcard({...vcard, lastName: e.target.value})} style={inputStyle} />
+                </div>
+                <div className="col-span-2">
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>TELEFON</label>
+                  <input type="text" value={vcard.phone} onChange={e => setVcard({...vcard, phone: e.target.value})} style={inputStyle} />
+                </div>
+                <div className="col-span-2">
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>KOMPANIYA / LAVOZIM</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="text" placeholder="Org" value={vcard.org} onChange={e => setVcard({...vcard, org: e.target.value})} style={inputStyle} />
+                    <input type="text" placeholder="Job" value={vcard.job} onChange={e => setVcard({...vcard, job: e.target.value})} style={inputStyle} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mode === 'email' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>KIMGA (EMAIL)</label>
+                  <input type="email" value={emailData.to} onChange={e => setEmailData({...emailData, to: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>MAVZU</label>
+                  <input type="text" value={emailData.subject} onChange={e => setEmailData({...emailData, subject: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>XABAR</label>
+                  <textarea rows={3} value={emailData.body} onChange={e => setEmailData({...emailData, body: e.target.value})} style={{ ...inputStyle, resize: 'none' }} />
+                </div>
+              </div>
+            )}
+
+            {mode === 'sms' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>TELEFON</label>
+                  <input type="text" value={smsData.phone} onChange={e => setSmsData({...smsData, phone: e.target.value})} style={inputStyle} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>XABAR</label>
+                  <textarea rows={3} value={smsData.message} onChange={e => setSmsData({...smsData, message: e.target.value})} style={{ ...inputStyle, resize: 'none' }} />
+                </div>
+              </div>
+            )}
+
+            {mode === 'crypto' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>VALYUTA</label>
+                  <select value={crypto.currency} onChange={e => setCrypto({...crypto, currency: e.target.value})} style={inputStyle}>
+                    <option value="bitcoin">Bitcoin (BTC)</option>
+                    <option value="ethereum">Ethereum (ETH)</option>
+                    <option value="litecoin">Litecoin (LTC)</option>
+                    <option value="dash">Dash</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>HAMYON MANZILI</label>
+                  <input type="text" value={crypto.address} onChange={e => setCrypto({...crypto, address: e.target.value})} style={inputStyle} />
+                </div>
+              </div>
+            )}
+
+            {mode === 'calendar' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>TADBIR NOMI</label>
+                  <input type="text" value={event.title} onChange={e => setEvent({...event, title: e.target.value})} style={inputStyle} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>PAROL</label>
-                    <input type="text" placeholder="********" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>BOSHLANISHI</label>
+                    <input type="datetime-local" value={event.start} onChange={e => setEvent({...event, start: e.target.value})} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>XAVFSIZLIK</label>
-                    <select value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}>
-                      <option value="WPA">WPA/WPA2</option>
-                      <option value="WEP">WEP</option>
-                      <option value="nopass">Parolsiz</option>
-                    </select>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#64748b', fontWeight: 600 }}>TUGASHI</label>
+                    <input type="datetime-local" value={event.end} onChange={e => setEvent({...event, end: e.target.value})} style={inputStyle} />
                   </div>
                 </div>
               </div>
             )}
 
-            {(mode === 'image' || mode === 'pdf') && (
+            {(mode === 'image' || mode === 'pdf' || mode === 'audio') && (
               <div 
                 onClick={() => document.getElementById('file-upload').click()}
                 style={{ 
@@ -517,11 +625,11 @@ const ConvertModal = ({ onClose }) => {
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = currentMode?.color; e.currentTarget.style.background = `${currentMode?.color}05`; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = 'white'; }}
               >
-                <input id="file-upload" type="file" hidden accept={mode === 'image' ? "image/*" : ".pdf"} onChange={handleFileChange} />
+                <input id="file-upload" type="file" hidden accept={mode === 'image' ? "image/*" : mode === 'pdf' ? ".pdf" : "audio/*"} onChange={handleFileChange} />
                 <div style={{ color: currentMode?.color, marginBottom: '0.75rem' }}>
-                  {file ? <FileText size={32} style={{ margin: '0 auto' }} /> : (mode === 'image' ? <ImageIcon size={32} style={{ margin: '0 auto' }} /> : <FileText size={32} style={{ margin: '0 auto' }} />)}
+                  {file ? <FileText size={32} style={{ margin: '0 auto' }} /> : (mode === 'image' ? <ImageIcon size={32} style={{ margin: '0 auto' }} /> : mode === 'pdf' ? <FileText size={32} style={{ margin: '0 auto' }} /> : <Volume2 size={32} style={{ margin: '0 auto' }} />)}
                 </div>
-                <div style={{ fontWeight: 600, color: '#1e293b' }}>{file ? file.name : (mode === 'image' ? 'Rasmni tanlang' : 'PDF faylni tanlang')}</div>
+                <div style={{ fontWeight: 600, color: '#1e293b' }}>{file ? file.name : (mode === 'image' ? 'Rasmni tanlang' : mode === 'pdf' ? 'PDF faylni tanlang' : 'Audio faylni tanlang')}</div>
                 <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>Fayl hajmi 5MB dan oshmasligi kerak</div>
               </div>
             )}
