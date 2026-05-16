@@ -718,14 +718,18 @@ const ConvertModal = ({ onClose }) => {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', zIndex: 1000, padding: '1rem'
+      backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-start',
+      justifyContent: 'center', zIndex: 1000, padding: '2rem 1rem', overflowY: 'auto'
     }}>
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       `}</style>
-      <div className="card" style={{ width: '100%', maxWidth: step === 'grid' ? '600px' : '440px', padding: '2rem', position: 'relative', transition: 'all 0.3s' }}>
+      <div className="card" style={{ 
+        width: '100%', maxWidth: step === 'grid' ? '800px' : '480px', padding: '2.5rem', 
+        position: 'relative', transition: 'all 0.3s', margin: 'auto',
+        maxHeight: 'none'
+      }}>
         <button 
           onClick={onClose}
           style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#f4f4f5', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
