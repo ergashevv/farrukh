@@ -187,6 +187,31 @@ const ConvertModal = ({ onClose }) => {
   const [wifi, setWifi] = useState({ ssid: '', password: '', security: 'WPA' });
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const inputStyle = {
+    width: '100%',
+    padding: '0.875rem 1rem',
+    borderRadius: '12px',
+    border: '1.5px solid #e2e8f0',
+    backgroundColor: '#ffffff',
+    fontSize: '0.95rem',
+    color: '#1e293b',
+    outline: 'none',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+  };
+
+  const handleInputFocus = (e) => {
+    e.target.style.borderColor = currentMode?.color || '#f59e0b';
+    e.target.style.boxShadow = `0 0 0 4px ${currentMode?.color || '#f59e0b'}15`;
+    e.target.style.transform = 'translateY(-1px)';
+  };
+
+  const handleInputBlur = (e) => {
+    e.target.style.borderColor = '#e2e8f0';
+    e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+    e.target.style.transform = 'translateY(0)';
+  };
   const [resultUrl, setResultUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -401,74 +426,83 @@ const ConvertModal = ({ onClose }) => {
             </div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9', marginBottom: '1.5rem' }}>
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '1.25rem', border: '1px solid #eef2f6', marginBottom: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
             {(mode === 'url' || mode === 'youtube' || mode === 'appstore') && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Manzilni kiriting</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>
+                  {mode === 'url' ? 'HAVOLA / URL' : mode === 'youtube' ? 'YOUTUBE LINK' : 'APP STORE LINK'}
+                </label>
                 <input 
-                  type="text" className="input" placeholder="https://..." 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                  type="text" placeholder="https://..." 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
+                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
             {mode === 'whatsapp' && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Telefon raqami</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>TELEFON RAQAMI</label>
                 <input 
-                  type="text" className="input" placeholder="+998901234567" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                  type="text" placeholder="+998901234567" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
+                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
             {mode === 'instagram' && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Instagram username</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>INSTAGRAM USERNAME</label>
                 <input 
-                  type="text" className="input" placeholder="@username" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                  type="text" placeholder="@username" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
+                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
             {mode === 'maps' && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Manzil yoki joy nomi</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>MANZIL YOKI JOY NOMI</label>
                 <input 
-                  type="text" className="input" placeholder="Toshkent, Amir Temur ko‘chasi" 
-                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} style={{ width: '100%', background: 'white' }}
+                  type="text" placeholder="Toshkent, Amir Temur ko‘chasi" 
+                  value={inputUrl} onChange={(e) => setInputUrl(e.target.value)} 
+                  style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
             {mode === 'text' && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Matnni kiriting</label>
+                <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>MATNNI KIRITING</label>
                 <textarea 
-                  className="input" placeholder="Bu yerga xabar yoki matnni yozing..." rows={4}
-                  value={inputText} onChange={(e) => setInputText(e.target.value)} style={{ width: '100%', background: 'white', resize: 'none' }}
+                  placeholder="Bu yerga xabar yoki matnni yozing..." rows={4}
+                  value={inputText} onChange={(e) => setInputText(e.target.value)} 
+                  style={{ ...inputStyle, resize: 'none' }} onFocus={handleInputFocus} onBlur={handleInputBlur}
                 />
               </div>
             )}
 
             {mode === 'wifi' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Tarmoq nomi (SSID)</label>
-                  <input type="text" className="input" placeholder="WiFi nomi" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} style={{ width: '100%', background: 'white' }} />
+                  <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>TARMOQ NOMI (SSID)</label>
+                  <input type="text" placeholder="WiFi nomi" value={wifi.ssid} onChange={(e) => setWifi({...wifi, ssid: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
                 </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Parol</label>
-                  <input type="text" className="input" placeholder="********" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} style={{ width: '100%', background: 'white' }} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.6rem', color: '#3f3f46', fontWeight: 600 }}>Xavfsizlik turi</label>
-                  <select className="input" value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})} style={{ width: '100%', background: 'white' }}>
-                    <option value="WPA">WPA/WPA2</option>
-                    <option value="WEP">WEP</option>
-                    <option value="nopass">Parolsiz (Open)</option>
-                  </select>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>PAROL</label>
+                    <input type="text" placeholder="********" value={wifi.password} onChange={(e) => setWifi({...wifi, password: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.6rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.02em' }}>XAVFSIZLIK</label>
+                    <select value={wifi.security} onChange={(e) => setWifi({...wifi, security: e.target.value})} style={inputStyle} onFocus={handleInputFocus} onBlur={handleInputBlur}>
+                      <option value="WPA">WPA/WPA2</option>
+                      <option value="WEP">WEP</option>
+                      <option value="nopass">Parolsiz</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
